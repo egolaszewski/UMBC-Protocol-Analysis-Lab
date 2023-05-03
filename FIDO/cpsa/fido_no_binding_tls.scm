@@ -1,4 +1,5 @@
-(herald "FIDO with TLS authentication of server and no binding")
+(herald "FIDO with TLS authentication of server and no binding."
+	(bound 20))
 
 (include "tlsmacros.lisp")
 
@@ -11,11 +12,11 @@
   (defrole auth
     (vars
      (auth client name)
-     (challenge text)
+     (fcp mesg)
      )
     (trace
-     (recv (enc challenge (ltk client auth)))
-     (send (enc (signed challenge auth) (ltk client auth)))
+     (recv (enc fcp (ltk client auth)))
+     (send (enc (signed fcp auth) (ltk client auth)))
      )
     )
 
@@ -23,31 +24,32 @@
     (vars
      (auth server ca name)
      (n1 n2 pms challenge text)
+	 (tlsData data)
+	 (pks akey)
      )
     (trace
-     (TLSserver_nocertreq n1 n2 pms server ca)
+     (TLSserver_nocertreq n1 n2 pms server pks ca)
      (send (enc challenge (ServerWriteKey (MasterSecret pms n1 n2))))
-     (recv (enc (signed challenge auth)
+     (recv (enc (signed (hash challenge tlsData) auth)
 		(ClientWriteKey (MasterSecret pms n1 n2))))
      )
-    (uniq-orig challenge)
-    (non-orig (privk ca))
     )
 
   (defrole client
     (vars
      (auth client server ca name)
      (n1 n2 pms challenge text)
+	 (tlsData data)
+	 (pks akey)
      )
     (trace
-     (TLSclient_nocerts n1 n2 pms server ca)
+     (TLSclient_nocerts n1 n2 pms server pks ca)
      (recv (enc challenge (ServerWriteKey (MasterSecret pms n1 n2))))
-     (send (enc challenge (ltk client auth)))
-     (recv (enc (signed challenge auth) (ltk client auth)))
-     (send (enc (signed challenge auth)
+     (send (enc (hash challenge tlsData) (ltk client auth)))
+     (recv (enc (signed (hash challenge tlsData) auth) (ltk client auth)))
+     (send (enc (signed (hash challenge tlsData) auth)
 		(ClientWriteKey (MasterSecret pms n1 n2))))
      )
-    (non-orig (privk ca))
     )
 
   (defrule one-authenticator-per-client
@@ -67,21 +69,26 @@
 
 ;;; Server perspective
 (defskeleton fido
-  (vars (auth server name) (n2 text))
-  (defstrand server 8
+  (vars (auth server ca name) (n2 challenge text) (pks akey))
+  (defstrandmax server
     (auth auth)
     (server server)
-    (n2 n2))
+	(ca ca)
+    (n2 n2)
+	(challenge challenge)
+	(pks pks))
   (non-orig
    (privk auth)
-   (privk server))
-  (uniq-orig n2)
+   (privk server)
+   (privk ca)
+   (invk pks))
+  (uniq-orig n2 challenge)
   )
 
 ;;; Authenticator perspective
 (defskeleton fido
   (vars (auth client name))
-  (defstrand auth 2
+  (defstrandmax auth
     (auth auth)
     (client client))
   (non-orig
@@ -91,42 +98,49 @@
 
 ;;; Client perspective
 (defskeleton fido
-  (vars (auth client server name) (n1 pms text))
-  (defstrand client 9
+  (vars (auth client server ca name) (n1 pms text) (pks akey))
+  (defstrandmax client
     (auth auth)
     (client client)
     (server server)
+	(ca ca)
     (n1 n1)
-    (pms pms))
+    (pms pms)
+	(pks pks))
   (non-orig
    (privk auth)
-   (privk server)
-   (ltk client auth))
+   (privk ca)
+   (ltk client auth)
+   (invk pks))
   (uniq-orig n1 pms)
   )
 
 ;;; Test for Penetrator available values
 (defskeleton fido
-  (vars (auth server name) (n2 challenge text))
-  (defstrand server 8
+  (vars (auth server ca name) (n2 challenge text) (pks akey))
+  (defstrandmax server
     (auth auth)
     (server server)
+	(ca ca)
     (n2 n2)
-    (challenge challenge))
+	(challenge challenge)
+	(pks pks))
   (deflistener challenge)
   (non-orig
    (privk auth)
-   (privk server))
-  (uniq-orig n2)
-  )
+   (privk server)
+   (privk ca)
+   (invk pks))
+  (uniq-orig n2 challenge)
+ )
 
 (defskeleton fido
-  (vars (auth client name) (challenge text))
-  (defstrand auth 2
+  (vars (auth client name) (fcp mesg))
+  (defstrandmax auth
     (auth auth)
     (client client)
-    (challenge challenge))
-  (deflistener (signed challenge auth))
+    (fcp fcp))
+  (deflistener (signed fcp auth))
   (non-orig
    (privk auth)
    (ltk client auth))

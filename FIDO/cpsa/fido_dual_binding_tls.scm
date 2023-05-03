@@ -1,4 +1,5 @@
-(herald "FIDO with TLS authentication of server and channel binding")
+(herald "FIDO with TLS authentication of server and dual binding."
+	(bound 20))
 
 (include "tlsmacros.lisp")
 
@@ -11,11 +12,11 @@
   (defrole auth
     (vars
      (auth client name)
-     (authenticator mesg)
+     (fcp mesg)
      )
     (trace
-     (recv (enc authenticator (ltk client auth)))
-     (send (enc (signed authenticator auth) (ltk client auth)))
+     (recv (enc fcp (ltk client auth)))
+     (send (enc (signed fcp auth) (ltk client auth)))
      )
     (non-orig (ltk client auth))
     )
@@ -25,14 +26,14 @@
      (auth server ca name)
      (n1 n2 pms text)
      (ns data)
+	 (pks akey)
      )
     (trace
-     (TLSserver_nocertreq n1 n2 pms server ca)
-     (send (enc ns (hash ns (Certificate server ca)) (ServerWriteKey (MasterSecret pms n1 n2))))
-     (recv (enc (signed (hash (hash ns (Certificate server ca)) (Certificate server ca)) auth)
+     (TLSserver_nocertreq n1 n2 pms server pks ca)
+     (send (enc ns (hash ns (Certificate server pks ca)) (ServerWriteKey (MasterSecret pms n1 n2))))
+     (recv (enc (signed (hash (hash ns (Certificate server pks ca)) (Certificate server pks ca)) auth)
 		(ClientWriteKey (MasterSecret pms n1 n2))))
      )
-    (non-orig (privk ca))
     )
 
   (defrole client
@@ -40,16 +41,16 @@
      (auth client server ca name)
      (n1 n2 pms text)
      (ns data)
+	 (pks akey)
      )
     (trace
-     (TLSclient_nocerts n1 n2 pms server ca)
-     (recv (enc ns (hash ns (Certificate server ca)) (ServerWriteKey (MasterSecret pms n1 n2))))
-     (send (enc (hash (hash ns (Certificate server ca)) (Certificate server ca)) (ltk client auth)))
-     (recv (enc (signed (hash (hash ns (Certificate server ca)) (Certificate server ca)) auth) (ltk client auth)))
-     (send (enc (signed (hash (hash ns (Certificate server ca)) (Certificate server ca)) auth)
+     (TLSclient_nocerts n1 n2 pms server pks ca)
+     (recv (enc ns (hash ns (Certificate server pks ca)) (ServerWriteKey (MasterSecret pms n1 n2))))
+     (send (enc (hash (hash ns (Certificate server pks ca)) (Certificate server pks ca)) (ltk client auth)))
+     (recv (enc (signed (hash (hash ns (Certificate server pks ca)) (Certificate server pks ca)) auth) (ltk client auth)))
+     (send (enc (signed (hash (hash ns (Certificate server pks ca)) (Certificate server pks ca)) auth)
 		(ClientWriteKey (MasterSecret pms n1 n2))))
      )
-    (non-orig (privk ca))
     )
 
   (defrule one-authenticator-per-client
@@ -69,22 +70,26 @@
 
 ;;; Server perspective
 (defskeleton fido
-  (vars (auth server name) (n2 text) (ns data))
-  (defstrand server 8
+  (vars (auth server ca name) (n2 text) (ns data) (pks akey))
+  (defstrandmax server
     (auth auth)
     (server server)
+	(ca ca)
     (n2 n2)
-    (ns ns))
+	(ns ns)
+	(pks pks))
   (non-orig
    (privk auth)
-   (privk server))
+   (privk server)
+   (privk ca)
+   (invk pks))
   (uniq-orig n2 ns)
   )
 
 ;;; Authenticator perspective
 (defskeleton fido
   (vars (auth client name))
-  (defstrand auth 2
+  (defstrandmax auth
     (auth auth)
     (client client))
   (non-orig
@@ -94,42 +99,49 @@
 
 ;;; Client perspective
 (defskeleton fido
-  (vars (auth client server name) (n1 pms text))
-  (defstrand client 9
+  (vars (auth client server ca name) (n1 pms text) (pks akey))
+  (defstrandmax client
     (auth auth)
     (client client)
     (server server)
+	(ca ca)
     (n1 n1)
-    (pms pms))
+    (pms pms)
+	(pks pks))
   (non-orig
    (privk auth)
-   (privk server)
-   (ltk client auth))
+   (privk ca)
+   (ltk client auth)
+   (invk pks))
   (uniq-orig n1 pms)
   )
 
 ;;; Test for Penetrator available values
 (defskeleton fido
-  (vars (auth server name) (n2 text) (ns data))
-  (defstrand server 8
+  (vars (auth server ca name) (n2 text) (ns data) (pks akey))
+  (defstrandmax server
     (auth auth)
     (server server)
+	(ca ca)
     (n2 n2)
-    (ns ns))
-  (deflistener ns)
+	(ns ns)
+	(pks pks))
+  (deflistener (hash ns (Certificate server pks ca)))
   (non-orig
    (privk auth)
-   (privk server))
-  (uniq-orig n2)
+   (privk server)
+   (privk ca)
+   (invk pks))
+  (uniq-orig n2 ns)
   )
 
 (defskeleton fido
-  (vars (auth client name) (authenticator mesg))
-  (defstrand auth 2
+  (vars (auth client name) (fcp mesg))
+  (defstrandmax auth
     (auth auth)
     (client client)
-    (authenticator authenticator))
-  (deflistener (signed authenticator auth))
+    (fcp fcp))
+  (deflistener (signed fcp auth))
   (non-orig
    (privk auth)
    (ltk client auth))
