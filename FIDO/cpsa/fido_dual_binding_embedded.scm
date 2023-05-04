@@ -1,5 +1,5 @@
 (herald "FIDO with TLS authentication of server and dual binding (authenticator embedded in client)"
-	(bound 20))
+	(bound 20) (limit 10000))
 
 ;; In this version, the authenticator is treated as if it is embedded in the client. This is
 ;; consistent with the FIDO specifications in which they view the authenticator as a part of
@@ -51,7 +51,6 @@
     )
   )
 
-
 ;;; Server perspective with assumptions a server can realistically make
 (defskeleton fido
   (vars (auth server ca name) (pks akey) (n2 text) (ns data))
@@ -70,7 +69,7 @@
 
 ;;; Client perspective with assumptions a client can realistically make
 (defskeleton fido
-  (vars (auth server ca name) (pks akey) (n1 pms text))
+  (vars (auth server ca name) (pks akey) (n1 pms text) (ns data))
   (defstrandmax client
     (auth auth)
     (server server)
