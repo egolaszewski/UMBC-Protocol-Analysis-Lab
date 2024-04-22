@@ -1,0 +1,395 @@
+(comment "CPSA 4.4.2")
+(comment "Extracted shapes")
+
+(herald "Blanchet's Simple Example Protocol"
+  (comment "There is a flaw in this protocol by design"))
+
+(comment "CPSA 4.4.2")
+
+(comment "All input read from blanchet_binding.scm")
+
+(defprotocol blanchet-bound basic
+  (defrole init
+    (vars (a b name) (s skey) (d text) (r1 r2 data))
+    (trace
+      (send
+        (cat (enc (enc s (privk a)) (pubk b))
+          (enc
+            (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1 "bsp-1"
+              s) (privk a))))
+      (recv
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))))
+      (send
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))
+          (privk a)))))
+  (defrole resp
+    (vars (a b name) (s skey) (d text) (r1 r2 data))
+    (trace
+      (recv
+        (cat (enc (enc s (privk a)) (pubk b))
+          (enc
+            (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1 "bsp-1"
+              s) (privk a))))
+      (send
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))))
+      (recv
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))
+          (privk a)))))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (comment "Blanchet's protocol"))
+
+(defskeleton blanchet-bound
+  (vars (r1 r2 data) (s skey) (d text) (a b name))
+  (defstrand init 3 (r1 r1) (r2 r2) (s s) (d d) (a a) (b b))
+  (non-orig (privk a) (privk b))
+  (uniq-gen r1 s)
+  (goals
+    (forall ((a b name) (s skey) (d text) (r1 r2 data) (z strd))
+      (implies
+        (and (p "init" z 3) (p "init" "a" z a) (p "init" "b" z b)
+          (p "init" "s" z s) (p "init" "d" z d) (p "init" "r1" z r1)
+          (p "init" "r2" z r2) (non (privk a)) (non (privk b)) (ugen s)
+          (ugen r1))
+        (exists ((z-0 strd))
+          (and (p "resp" z-0 2) (p "resp" "a" z-0 a)
+            (p "resp" "b" z-0 b) (p "resp" "s" z-0 s)
+            (p "resp" "d" z-0 d) (p "resp" "r1" z-0 r1)
+            (p "resp" "r2" z-0 r2))))))
+  (traces
+    ((send
+       (cat (enc (enc s (privk a)) (pubk b))
+         (enc
+           (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1 "bsp-1" s)
+           (privk a))))
+      (recv
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))))
+      (send
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))
+          (privk a)))))
+  (label 0)
+  (unrealized (0 1))
+  (origs)
+  (comment "2 in cohort - 2 not yet seen"))
+
+(defskeleton blanchet-bound
+  (vars (r1 r2 data) (s skey) (d text) (a b name))
+  (defstrand init 3 (r1 r1) (r2 r2) (s s) (d d) (a a) (b b))
+  (defstrand resp 2 (r1 r1) (r2 r2) (s s) (d d) (a a) (b b))
+  (precedes ((0 0) (1 0)) ((1 1) (0 1)))
+  (non-orig (privk a) (privk b))
+  (uniq-gen r1 s)
+  (operation encryption-test (displaced 2 1 resp 2)
+    (enc
+      (hash
+        (enc
+          (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1 "bsp-1" s)
+          (privk a)) r2-0 "bsp-2" d) (privk b)) (0 1))
+  (traces
+    ((send
+       (cat (enc (enc s (privk a)) (pubk b))
+         (enc
+           (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1 "bsp-1" s)
+           (privk a))))
+      (recv
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))))
+      (send
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))
+          (privk a))))
+    ((recv
+       (cat (enc (enc s (privk a)) (pubk b))
+         (enc
+           (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1 "bsp-1" s)
+           (privk a))))
+      (send
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))))))
+  (label 5)
+  (parent 0)
+  (realized)
+  (shape)
+  (satisfies yes)
+  (maps ((0) ((a a) (b b) (s s) (d d) (r1 r1) (r2 r2))))
+  (origs))
+
+(comment "Nothing left to do")
+
+(defprotocol blanchet-bound basic
+  (defrole init
+    (vars (a b name) (s skey) (d text) (r1 r2 data))
+    (trace
+      (send
+        (cat (enc (enc s (privk a)) (pubk b))
+          (enc
+            (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1 "bsp-1"
+              s) (privk a))))
+      (recv
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))))
+      (send
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))
+          (privk a)))))
+  (defrole resp
+    (vars (a b name) (s skey) (d text) (r1 r2 data))
+    (trace
+      (recv
+        (cat (enc (enc s (privk a)) (pubk b))
+          (enc
+            (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1 "bsp-1"
+              s) (privk a))))
+      (send
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))))
+      (recv
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))
+          (privk a)))))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (comment "Blanchet's protocol"))
+
+(defskeleton blanchet-bound
+  (vars (r1 r2 data) (s skey) (d text) (a b name))
+  (defstrand resp 3 (r1 r1) (r2 r2) (s s) (d d) (a a) (b b))
+  (non-orig (privk a) (privk b))
+  (uniq-gen r2 d)
+  (goals
+    (forall ((a b name) (s skey) (d text) (r1 r2 data) (z strd))
+      (implies
+        (and (p "resp" z 3) (p "resp" "a" z a) (p "resp" "b" z b)
+          (p "resp" "s" z s) (p "resp" "d" z d) (p "resp" "r1" z r1)
+          (p "resp" "r2" z r2) (non (privk a)) (non (privk b)) (ugen d)
+          (ugen r2))
+        (exists ((z-0 strd))
+          (and (p "init" z-0 3) (p "init" "a" z-0 a)
+            (p "init" "b" z-0 b) (p "init" "s" z-0 s)
+            (p "init" "d" z-0 d) (p "init" "r1" z-0 r1)
+            (p "init" "r2" z-0 r2))))))
+  (traces
+    ((recv
+       (cat (enc (enc s (privk a)) (pubk b))
+         (enc
+           (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1 "bsp-1" s)
+           (privk a))))
+      (send
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))))
+      (recv
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))
+          (privk a)))))
+  (label 7)
+  (unrealized (0 0) (0 2))
+  (origs)
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton blanchet-bound
+  (vars (r2 r1 data) (s skey) (d text) (a b name))
+  (defstrand resp 3 (r1 r1) (r2 r2) (s s) (d d) (a a) (b b))
+  (defstrand init 3 (r1 r1) (r2 r2) (s s) (d d) (a a) (b b))
+  (precedes ((0 1) (1 1)) ((1 0) (0 0)) ((1 2) (0 2)))
+  (non-orig (privk a) (privk b))
+  (uniq-gen r2 d)
+  (operation encryption-test (displaced 1 2 init 3)
+    (enc
+      (enc
+        (hash
+          (enc
+            (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1 "bsp-1"
+              s) (privk a)) r2 "bsp-2" d) (privk b)) (privk a)) (0 2))
+  (traces
+    ((recv
+       (cat (enc (enc s (privk a)) (pubk b))
+         (enc
+           (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1 "bsp-1" s)
+           (privk a))))
+      (send
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))))
+      (recv
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))
+          (privk a))))
+    ((send
+       (cat (enc (enc s (privk a)) (pubk b))
+         (enc
+           (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1 "bsp-1" s)
+           (privk a))))
+      (recv
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))))
+      (send
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))
+          (privk a)))))
+  (label 11)
+  (parent 7)
+  (realized)
+  (shape)
+  (satisfies yes)
+  (maps ((0) ((a a) (b b) (s s) (d d) (r1 r1) (r2 r2))))
+  (origs))
+
+(defskeleton blanchet-bound
+  (vars (r2 r1 data) (s skey) (d text) (a b name))
+  (defstrand resp 3 (r1 r1) (r2 r2) (s s) (d d) (a a) (b b))
+  (defstrand init 1 (r1 r1) (s s) (a a) (b b))
+  (defstrand init 3 (r1 r1) (r2 r2) (s s) (d d) (a a) (b b))
+  (precedes ((0 1) (2 1)) ((1 0) (0 0)) ((2 2) (0 2)))
+  (non-orig (privk a) (privk b))
+  (uniq-gen r2 d)
+  (operation encryption-test (added-strand init 3)
+    (enc
+      (enc
+        (hash
+          (enc
+            (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1 "bsp-1"
+              s) (privk a)) r2 "bsp-2" d) (privk b)) (privk a)) (0 2))
+  (traces
+    ((recv
+       (cat (enc (enc s (privk a)) (pubk b))
+         (enc
+           (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1 "bsp-1" s)
+           (privk a))))
+      (send
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))))
+      (recv
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))
+          (privk a))))
+    ((send
+       (cat (enc (enc s (privk a)) (pubk b))
+         (enc
+           (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1 "bsp-1" s)
+           (privk a)))))
+    ((send
+       (cat (enc (enc s (privk a)) (pubk b))
+         (enc
+           (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1 "bsp-1" s)
+           (privk a))))
+      (recv
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))))
+      (send
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash "bsp" "flawed" a b) (privk a)) r1
+                  "bsp-1" s) (privk a)) r2 "bsp-2" d) (privk b))
+          (privk a)))))
+  (label 12)
+  (parent 7)
+  (realized)
+  (shape)
+  (satisfies yes)
+  (maps ((0) ((a a) (b b) (s s) (d d) (r1 r1) (r2 r2))))
+  (origs))
+
+(comment "Nothing left to do")

@@ -1,0 +1,3746 @@
+<?xml version="1.0"?>
+<!-- CPSA 4.4.2 -->
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+ <title>Session Binding Protocol with TLS 1.3 (uses the modified server as implemented and tested in the paper and the cookie authentication model (ca.scm) which showed the cookie stealing attack).</title>
+ <meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+ <style>
+  svg.diagram { border-width: 1px; border-style: solid }
+ </style>
+</head>
+<body>
+
+<pre>(comment &quot;CPSA 4.4.2&quot;)
+(comment &quot;Extracted shapes&quot;)
+(herald
+  &quot;Session Binding Protocol with TLS 1.3 (uses the modified server as implemented and tested in the paper and the cookie authentication model (ca.scm) which showed the cookie stealing attack).&quot;
+  (bound 12))
+(comment &quot;CPSA 4.4.2&quot;)
+(comment &quot;All input read from tls13_sbp.scm&quot;)
+(comment &quot;Strand count bounded at 12&quot;)</pre>
+
+<p id="top">Trees: <a href="#t0">0</a> <a href="#t63">63</a> <a href="#t78">78</a> <a href="#t147">147</a> <a href="#t149">149</a> <a href="#t152">152</a> <a href="#t215">215</a>.</p>
+
+<p id="t0">Tree <a href="#top">0</a>, POV <a href="#k0">0</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='129.840pt' height='79.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 129.840 79.920' font-size='12.000'>
+  <text
+   x='89.880' y='26.040'
+   style='font-weight: bold; text-anchor: middle; fill: blue;'
+   onclick='window.open(&quot;#k37&quot;, &quot;_self&quot;)'>37</text>
+  <line
+   x1='39.960' y1='39.960' x2='89.880' y2='39.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <text
+   x='39.960' y='26.040' style='text-anchor: middle; fill: black;'
+   onclick='window.open(&quot;#k0&quot;, &quot;_self&quot;)'>0</text>
+  </svg></div>
+
+<pre>(defprotocol ca basic
+  (defrole clienta
+    (vars (u s ca name) (cr sr random32) (x rndx) (y expt) (spk akey)
+      (p password) (cookie any mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)))
+      (send
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc &quot;login-successful&quot; cookie
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (load cookiestor any)
+      (stor cookiestor (cat &quot;client store&quot; u s cookie))
+      (send
+        (enc cookie request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;)))))
+    (uniq-gen x))
+  (defrole clientr
+    (vars (u s ca name) (cr sr random32) (x rndx) (y expt) (spk akey)
+      (cookie mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)))
+      (load cookiestor (cat &quot;client store&quot; u s cookie))
+      (send
+        (enc cookie request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;)))))
+    (uniq-gen x)
+    (gen-st (cat &quot;client store&quot; u s cookie)))
+  (defrole servera
+    (vars (u s ca name) (cr sr random32) (y rndx) (x expt) (spk akey)
+      (p password) (cookie data) (ppk skey) (any mesg) (authstor locn)
+      (request httpreq) (response httpdata))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (recv
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (send
+        (enc &quot;login-successful&quot;
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load authstor any)
+      (stor authstor (cat &quot;server store&quot; s u cookie))
+      (recv
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (send
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;)))))
+    (non-orig ppk)
+    (uniq-orig cookie)
+    (uniq-gen y)
+    (absent (y x))
+    (facts (neq u s)))
+  (defrole serverr
+    (vars (u s ca name) (cr sr random32) (y rndx) (x expt) (spk akey)
+      (cookie data) (ppk skey) (authstor locn) (request httpreq)
+      (response httpdata))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (recv
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load authstor (cat &quot;server store&quot; s u cookie))
+      (send
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;)))))
+    (non-orig ppk)
+    (uniq-gen y)
+    (absent (y x))
+    (facts (neq u s))
+    (gen-st (cat &quot;server store&quot; s u cookie)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (defgenrule scissorsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (leads-to z0 i0 z2 i2))
+        (and (= z1 z2) (= i1 i2)))))
+  (defgenrule cakeRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (leads-to z0 i0 z1 i1)
+          (leads-to z0 i0 z2 i2) (prec z1 i1 z2 i2)) (false))))
+  (defgenrule no-interruption
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (leads-to z0 i0 z2 i2) (trans z1 i1)
+          (same-locn z0 i0 z1 i1) (prec z0 i0 z1 i1) (prec z1 i1 z2 i2))
+        (false))))
+  (defgenrule shearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (same-locn z0 i0 z2 i2)
+          (prec z0 i0 z2 i2))
+        (or (and (= z1 z2) (= i1 i2)) (prec z1 i1 z2 i2)))))
+  (defgenrule invShearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (same-locn z0 i0 z1 i1)
+          (leads-to z1 i1 z2 i2) (prec z0 i0 z2 i2))
+        (or (and (= z0 z1) (= i0 i1)) (prec z0 i0 z1 i1)))))
+  (defgenrule fact-servera-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p &quot;servera&quot; z (idx 4)) (p &quot;servera&quot; &quot;s&quot; z s)
+          (p &quot;servera&quot; &quot;u&quot; z u)) (fact neq u s))))
+  (defgenrule fact-serverr-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p &quot;serverr&quot; z (idx 5)) (p &quot;serverr&quot; &quot;s&quot; z s)
+          (p &quot;serverr&quot; &quot;u&quot; z u)) (fact neq u s))))
+  (defgenrule trRl_clienta-at-6
+    (forall ((z strd))
+      (implies (p &quot;clienta&quot; z (idx 7)) (trans z (idx 6)))))
+  (defgenrule trRl_clienta-at-5
+    (forall ((z strd))
+      (implies (p &quot;clienta&quot; z (idx 7)) (trans z (idx 5)))))
+  (defgenrule trRl_servera-at-6
+    (forall ((z strd))
+      (implies (p &quot;servera&quot; z (idx 7)) (trans z (idx 6)))))
+  (defgenrule trRl_servera-at-5
+    (forall ((z strd))
+      (implies (p &quot;servera&quot; z (idx 7)) (trans z (idx 5)))))
+  (defgenrule gen-st-clientr-0
+    (forall ((z strd) (cookie mesg) (s u name))
+      (implies
+        (and (p &quot;clientr&quot; z (idx 4)) (p &quot;clientr&quot; &quot;cookie&quot; z cookie)
+          (p &quot;clientr&quot; &quot;s&quot; z s) (p &quot;clientr&quot; &quot;u&quot; z u))
+        (gen-st (cat &quot;client store&quot; u s cookie)))))
+  (defgenrule gen-st-serverr-0
+    (forall ((z strd) (cookie data) (u s name))
+      (implies
+        (and (p &quot;serverr&quot; z (idx 5)) (p &quot;serverr&quot; &quot;cookie&quot; z cookie)
+          (p &quot;serverr&quot; &quot;u&quot; z u) (p &quot;serverr&quot; &quot;s&quot; z s))
+        (gen-st (cat &quot;server store&quot; s u cookie)))))
+  (lang (random32 atom) (random48 atom) (password atom) (httpreq atom)
+    (httpdata atom)))</pre>
+
+<p id="k0">Item <a href="#t0">0</a>, Child: <a href="#k37">37</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='754.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 754.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='714.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g>
+   <title>(enc response (hash &quot;s ap traffic&quot; cr sr (hash (exp (gen) (mul x y)) &quot;derived&quot;)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='714.960' r='6.000'/></g>
+  <g>
+   <title>(enc cookie request (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul x y)) &quot;derived&quot;)))</title>
+   <circle cx='39.960' cy='639.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg cookiestor (cat pt-0 &quot;client store&quot; u s cookie))</title>
+   <circle style='fill: gray;' cx='39.960' cy='564.960' r='6.000'/></g>
+  <g><title>(ch-msg cookiestor (cat pt any))</title>
+   <circle style='fill: gray;' cx='39.960' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(enc &quot;login-successful&quot; cookie (hash &quot;s ap traffic&quot; cr sr (hash (exp (gen) (mul x y)) &quot;derived&quot;)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc &quot;login&quot; u p (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul x y)) &quot;derived&quot;)))</title>
+   <circle cx='39.960' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash (hash &quot;finished&quot; (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)))) (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))</title>
+   <circle cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat (cat sr (exp (gen) y)) (enc (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk))) (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr)))</title>
+   <circle style='fill: red;' cx='39.960' cy='189.960' r='6.000'/></g>
+  <g><title>(cat cr (exp (gen) x))</title>
+   <circle cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((cookie cookie) (any any) (response response) (request request) (p p) (cr cr) (sr sr) (spk spk) (u u) (s s) (ca ca) (cookiestor cookiestor) (x x) (y y))</title>
+   <text
+    x='39.960' y='77.460' style='text-anchor: middle;'>clienta</text>
+   </g>
+  <text x='39.960' y='39.960' style='text-anchor: middle;'>ca 0</text>
+  </svg></div>
+
+<pre>(defskeleton ca
+  (vars (cookie any mesg) (response httpdata) (request httpreq)
+    (p password) (cr sr random32) (spk akey) (u s ca name)
+    (pt pt-0 pval) (cookiestor locn) (x rndx) (y expt))
+  (defstrand clienta 9 (cookie cookie) (any any) (response response)
+    (request request) (p p) (cr cr) (sr sr) (spk spk) (u u) (s s)
+    (ca ca) (cookiestor cookiestor) (x x) (y y))
+  (non-orig (invk spk) (privk ca))
+  (pen-non-orig p)
+  (uniq-orig cr sr)
+  (uniq-gen x)
+  (traces
+    ((send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)))
+      (send
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc &quot;login-successful&quot; cookie
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (load cookiestor (cat pt any))
+      (stor cookiestor (cat pt-0 &quot;client store&quot; u s cookie))
+      (send
+        (enc cookie request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))))
+  (label 0)
+  (unrealized (0 1))
+  (origs (pt-0 (0 6)) (cr (0 0)))
+  (comment &quot;Not closed under rules&quot;))</pre>
+
+<p id="k37">Item <a href="#t0">37</a>, Parent: <a href="#k0">0</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='179.880pt' height='754.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 179.880 754.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='139.920' y1='114.960' x2='139.920' y2='714.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='714.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <path
+   d='M 139.920 714.960 Q 92.940 714.960 45.960 714.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc response (hash &quot;s ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle cx='139.920' cy='714.960' r='6.000'/></g>
+  <g>
+   <title>(enc (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;))) request (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle style='fill: blue;' cx='139.920' cy='639.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg authstor (cat pt-2 &quot;server store&quot; s u cookie))</title>
+   <circle style='fill: gray;' cx='139.920' cy='564.960' r='6.000'/></g>
+  <g><title>(ch-msg authstor (cat pt-1 any-0))</title>
+   <circle style='fill: gray;' cx='139.920' cy='489.960' r='6.000'/></g>
+  <path
+   d='M 139.920 414.960 Q 92.940 414.960 45.960 414.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc &quot;login-successful&quot; (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;))) (hash &quot;s ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle cx='139.920' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc &quot;login&quot; u p (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle style='fill: blue;' cx='139.920' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)))) (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))</title>
+   <circle style='fill: blue;' cx='139.920' cy='264.960' r='6.000'/></g>
+  <path
+   d='M 139.920 189.960 Q 92.940 189.960 45.960 189.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(cat (cat sr (exp (gen) y)) (enc (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk))) (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)))</title>
+   <circle cx='139.920' cy='189.960' r='6.000'/></g>
+  <g><title>(cat cr (exp (gen) x))</title>
+   <circle style='fill: blue;' cx='139.920' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>(enc response (hash &quot;s ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='714.960' r='6.000'/></g>
+  <path
+   d='M 39.960 639.960 Q 86.940 639.960 133.920 639.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;))) request (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle cx='39.960' cy='639.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg cookiestor (cat pt-0 &quot;client store&quot; u s (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))))</title>
+   <circle style='fill: gray;' cx='39.960' cy='564.960' r='6.000'/></g>
+  <g><title>(ch-msg cookiestor (cat pt any))</title>
+   <circle style='fill: gray;' cx='39.960' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(enc &quot;login-successful&quot; (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;))) (hash &quot;s ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='414.960' r='6.000'/></g>
+  <path
+   d='M 39.960 339.960 Q 86.940 339.960 133.920 339.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc &quot;login&quot; u p (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle cx='39.960' cy='339.960' r='6.000'/></g>
+  <path
+   d='M 39.960 264.960 Q 86.940 264.960 133.920 264.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)))) (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))</title>
+   <circle cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat (cat sr (exp (gen) y)) (enc (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk))) (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='189.960' r='6.000'/></g>
+  <path
+   d='M 39.960 114.960 Q 86.940 114.960 133.920 114.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g><title>(cat cr (exp (gen) x))</title>
+   <circle cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((any any-0) (cookie cookie) (response response) (request request) (p p) (cr cr) (sr sr) (ppk ppk) (spk spk) (u u) (s s) (ca ca) (authstor authstor) (y y) (x x))</title>
+   <text
+    x='139.920' y='77.460' style='text-anchor: middle;'>servera</text>
+   </g>
+  <g>
+   <title>((cookie (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))) (any any) (response response) (request request) (p p) (cr cr) (sr sr) (spk spk) (u u) (s s) (ca ca) (cookiestor cookiestor) (x x) (y y))</title>
+   <text
+    x='39.960' y='77.460' style='text-anchor: middle;'>clienta</text>
+   </g>
+  <text x='89.940' y='39.960' style='text-anchor: middle;'>ca 37</text>
+  </svg></div>
+
+<pre>(defskeleton ca
+  (vars (any any-0 mesg) (cookie data) (response httpdata)
+    (request httpreq) (p password) (cr sr random32) (ppk skey)
+    (spk akey) (u s ca name) (pt pt-0 pt-1 pt-2 pval)
+    (cookiestor authstor locn) (y x rndx))
+  (defstrand clienta 9
+    (cookie
+      (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+    (any any) (response response) (request request) (p p) (cr cr)
+    (sr sr) (spk spk) (u u) (s s) (ca ca) (cookiestor cookiestor) (x x)
+    (y y))
+  (defstrand servera 9 (any any-0) (cookie cookie) (response response)
+    (request request) (p p) (cr cr) (sr sr) (ppk ppk) (spk spk) (u u)
+    (s s) (ca ca) (authstor authstor) (y y) (x x))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((0 3) (1 3)) ((0 7) (1 7))
+    ((1 1) (0 1)) ((1 4) (0 4)) ((1 8) (0 8)))
+  (non-orig ppk (invk spk) (privk ca))
+  (pen-non-orig p)
+  (uniq-orig cookie cr sr)
+  (uniq-gen y x)
+  (absent (y x))
+  (facts (neq u s))
+  (rule fact-servera-neq0 trRl_clienta-at-5 trRl_clienta-at-6
+    trRl_servera-at-5 trRl_servera-at-6)
+  (operation encryption-test (displaced 2 0 clienta 8)
+    (enc
+      (enc cookie (hash ppk (hash (exp (gen) (mul x-0 y)) &quot;derived&quot;)))
+      request-0
+      (hash &quot;c ap traffic&quot; cr sr
+        (hash (exp (gen) (mul x-0 y)) &quot;derived&quot;))) (1 7))
+  (traces
+    ((send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (send
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (recv
+        (enc &quot;login-successful&quot;
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load cookiestor (cat pt any))
+      (stor cookiestor
+        (cat pt-0 &quot;client store&quot; u s
+          (enc cookie
+            (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))))
+      (send
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;)))))
+    ((recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (recv
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (send
+        (enc &quot;login-successful&quot;
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load authstor (cat pt-1 any-0))
+      (stor authstor (cat pt-2 &quot;server store&quot; s u cookie))
+      (recv
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (send
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))))
+  (label 37)
+  (parent 0)
+  (realized)
+  (shape)
+  (maps
+    ((0)
+      ((u u) (s s) (ca ca) (spk spk) (p p) (cr cr) (sr sr) (x x) (y y)
+        (cookie
+          (enc cookie
+            (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+        (any any) (cookiestor cookiestor) (request request)
+        (response response))))
+  (origs (pt-0 (0 6)) (cookie (1 4)) (pt-2 (1 6)) (cr (0 0))
+    (sr (1 1))))</pre>
+
+<p id="t63">Tree <a href="#top">63</a>, POV <a href="#k63">63</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='79.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 79.920' font-size='12.000'>
+  <text
+   x='39.960' y='26.040' style='text-anchor: middle; fill: black;'
+   onclick='window.open(&quot;#k63&quot;, &quot;_self&quot;)'>63</text>
+  </svg></div>
+
+<pre>(defprotocol ca basic
+  (defrole clienta
+    (vars (u s ca name) (cr sr random32) (x rndx) (y expt) (spk akey)
+      (p password) (cookie any mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)))
+      (send
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc &quot;login-successful&quot; cookie
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (load cookiestor any)
+      (stor cookiestor (cat &quot;client store&quot; u s cookie))
+      (send
+        (enc cookie request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;)))))
+    (uniq-gen x))
+  (defrole clientr
+    (vars (u s ca name) (cr sr random32) (x rndx) (y expt) (spk akey)
+      (cookie mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)))
+      (load cookiestor (cat &quot;client store&quot; u s cookie))
+      (send
+        (enc cookie request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;)))))
+    (uniq-gen x)
+    (gen-st (cat &quot;client store&quot; u s cookie)))
+  (defrole servera
+    (vars (u s ca name) (cr sr random32) (y rndx) (x expt) (spk akey)
+      (p password) (cookie data) (ppk skey) (any mesg) (authstor locn)
+      (request httpreq) (response httpdata))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (recv
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (send
+        (enc &quot;login-successful&quot;
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load authstor any)
+      (stor authstor (cat &quot;server store&quot; s u cookie))
+      (recv
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (send
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;)))))
+    (non-orig ppk)
+    (uniq-orig cookie)
+    (uniq-gen y)
+    (absent (y x))
+    (facts (neq u s)))
+  (defrole serverr
+    (vars (u s ca name) (cr sr random32) (y rndx) (x expt) (spk akey)
+      (cookie data) (ppk skey) (authstor locn) (request httpreq)
+      (response httpdata))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (recv
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load authstor (cat &quot;server store&quot; s u cookie))
+      (send
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;)))))
+    (non-orig ppk)
+    (uniq-gen y)
+    (absent (y x))
+    (facts (neq u s))
+    (gen-st (cat &quot;server store&quot; s u cookie)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (defgenrule scissorsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (leads-to z0 i0 z2 i2))
+        (and (= z1 z2) (= i1 i2)))))
+  (defgenrule cakeRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (leads-to z0 i0 z1 i1)
+          (leads-to z0 i0 z2 i2) (prec z1 i1 z2 i2)) (false))))
+  (defgenrule no-interruption
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (leads-to z0 i0 z2 i2) (trans z1 i1)
+          (same-locn z0 i0 z1 i1) (prec z0 i0 z1 i1) (prec z1 i1 z2 i2))
+        (false))))
+  (defgenrule shearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (same-locn z0 i0 z2 i2)
+          (prec z0 i0 z2 i2))
+        (or (and (= z1 z2) (= i1 i2)) (prec z1 i1 z2 i2)))))
+  (defgenrule invShearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (same-locn z0 i0 z1 i1)
+          (leads-to z1 i1 z2 i2) (prec z0 i0 z2 i2))
+        (or (and (= z0 z1) (= i0 i1)) (prec z0 i0 z1 i1)))))
+  (defgenrule fact-servera-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p &quot;servera&quot; z (idx 4)) (p &quot;servera&quot; &quot;s&quot; z s)
+          (p &quot;servera&quot; &quot;u&quot; z u)) (fact neq u s))))
+  (defgenrule fact-serverr-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p &quot;serverr&quot; z (idx 5)) (p &quot;serverr&quot; &quot;s&quot; z s)
+          (p &quot;serverr&quot; &quot;u&quot; z u)) (fact neq u s))))
+  (defgenrule trRl_clienta-at-6
+    (forall ((z strd))
+      (implies (p &quot;clienta&quot; z (idx 7)) (trans z (idx 6)))))
+  (defgenrule trRl_clienta-at-5
+    (forall ((z strd))
+      (implies (p &quot;clienta&quot; z (idx 7)) (trans z (idx 5)))))
+  (defgenrule trRl_servera-at-6
+    (forall ((z strd))
+      (implies (p &quot;servera&quot; z (idx 7)) (trans z (idx 6)))))
+  (defgenrule trRl_servera-at-5
+    (forall ((z strd))
+      (implies (p &quot;servera&quot; z (idx 7)) (trans z (idx 5)))))
+  (defgenrule gen-st-clientr-0
+    (forall ((z strd) (cookie mesg) (s u name))
+      (implies
+        (and (p &quot;clientr&quot; z (idx 4)) (p &quot;clientr&quot; &quot;cookie&quot; z cookie)
+          (p &quot;clientr&quot; &quot;s&quot; z s) (p &quot;clientr&quot; &quot;u&quot; z u))
+        (gen-st (cat &quot;client store&quot; u s cookie)))))
+  (defgenrule gen-st-serverr-0
+    (forall ((z strd) (cookie data) (u s name))
+      (implies
+        (and (p &quot;serverr&quot; z (idx 5)) (p &quot;serverr&quot; &quot;cookie&quot; z cookie)
+          (p &quot;serverr&quot; &quot;u&quot; z u) (p &quot;serverr&quot; &quot;s&quot; z s))
+        (gen-st (cat &quot;server store&quot; s u cookie)))))
+  (lang (random32 atom) (random48 atom) (password atom) (httpreq atom)
+    (httpdata atom)))</pre>
+
+<p id="k63">Item <a href="#t63">63</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='179.880pt' height='754.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 179.880 754.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='139.920' y1='114.960' x2='139.920' y2='189.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='714.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g><title>cookie</title><circle cx='139.920' cy='189.960' r='6.000'/>
+   </g>
+  <g><title>cookie</title>
+   <circle style='fill: blue;' cx='139.920' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>(enc response (hash &quot;s ap traffic&quot; cr sr (hash (exp (gen) (mul x y)) &quot;derived&quot;)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='714.960' r='6.000'/></g>
+  <g>
+   <title>(enc cookie request (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul x y)) &quot;derived&quot;)))</title>
+   <circle cx='39.960' cy='639.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg cookiestor (cat pt-0 &quot;client store&quot; u s cookie))</title>
+   <circle style='fill: gray;' cx='39.960' cy='564.960' r='6.000'/></g>
+  <g><title>(ch-msg cookiestor (cat pt any))</title>
+   <circle style='fill: gray;' cx='39.960' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(enc &quot;login-successful&quot; cookie (hash &quot;s ap traffic&quot; cr sr (hash (exp (gen) (mul x y)) &quot;derived&quot;)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc &quot;login&quot; u p (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul x y)) &quot;derived&quot;)))</title>
+   <circle cx='39.960' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash (hash &quot;finished&quot; (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)))) (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))</title>
+   <circle cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat (cat sr (exp (gen) y)) (enc (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk))) (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr)))</title>
+   <circle style='fill: red;' cx='39.960' cy='189.960' r='6.000'/></g>
+  <g><title>(cat cr (exp (gen) x))</title>
+   <circle cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((cookie cookie) (any any) (response response) (request request) (p p) (cr cr) (sr sr) (spk spk) (u u) (s s) (ca ca) (cookiestor cookiestor) (x x) (y y))</title>
+   <text
+    x='39.960' y='77.460' style='text-anchor: middle;'>clienta</text>
+   </g>
+  <text x='89.940' y='39.960' style='text-anchor: middle;'>ca 63</text>
+  </svg></div>
+
+<pre>(defskeleton ca
+  (vars (any mesg) (cookie data) (response httpdata) (request httpreq)
+    (p password) (cr sr random32) (spk akey) (u s ca name)
+    (pt pt-0 pval) (cookiestor locn) (x rndx) (y expt))
+  (defstrand clienta 9 (cookie cookie) (any any) (response response)
+    (request request) (p p) (cr cr) (sr sr) (spk spk) (u u) (s s)
+    (ca ca) (cookiestor cookiestor) (x x) (y y))
+  (deflistener cookie)
+  (non-orig (invk spk) (privk ca))
+  (pen-non-orig p)
+  (uniq-orig cr sr)
+  (uniq-gen x)
+  (traces
+    ((send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)))
+      (send
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc &quot;login-successful&quot; cookie
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (load cookiestor (cat pt any))
+      (stor cookiestor (cat pt-0 &quot;client store&quot; u s cookie))
+      (send
+        (enc cookie request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;)))))
+    ((recv cookie) (send cookie)))
+  (label 63)
+  (unrealized (0 1))
+  (origs (pt-0 (0 6)) (cr (0 0)))
+  (comment &quot;Not closed under rules&quot;))</pre>
+
+<p id="t78">Tree <a href="#top">78</a>, POV <a href="#k78">78</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='79.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 79.920' font-size='12.000'>
+  <text
+   x='39.960' y='26.040' style='text-anchor: middle; fill: black;'
+   onclick='window.open(&quot;#k78&quot;, &quot;_self&quot;)'>78</text>
+  </svg></div>
+
+<pre>(defprotocol ca basic
+  (defrole clienta
+    (vars (u s ca name) (cr sr random32) (x rndx) (y expt) (spk akey)
+      (p password) (cookie any mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)))
+      (send
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc &quot;login-successful&quot; cookie
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (load cookiestor any)
+      (stor cookiestor (cat &quot;client store&quot; u s cookie))
+      (send
+        (enc cookie request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;)))))
+    (uniq-gen x))
+  (defrole clientr
+    (vars (u s ca name) (cr sr random32) (x rndx) (y expt) (spk akey)
+      (cookie mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)))
+      (load cookiestor (cat &quot;client store&quot; u s cookie))
+      (send
+        (enc cookie request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;)))))
+    (uniq-gen x)
+    (gen-st (cat &quot;client store&quot; u s cookie)))
+  (defrole servera
+    (vars (u s ca name) (cr sr random32) (y rndx) (x expt) (spk akey)
+      (p password) (cookie data) (ppk skey) (any mesg) (authstor locn)
+      (request httpreq) (response httpdata))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (recv
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (send
+        (enc &quot;login-successful&quot;
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load authstor any)
+      (stor authstor (cat &quot;server store&quot; s u cookie))
+      (recv
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (send
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;)))))
+    (non-orig ppk)
+    (uniq-orig cookie)
+    (uniq-gen y)
+    (absent (y x))
+    (facts (neq u s)))
+  (defrole serverr
+    (vars (u s ca name) (cr sr random32) (y rndx) (x expt) (spk akey)
+      (cookie data) (ppk skey) (authstor locn) (request httpreq)
+      (response httpdata))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (recv
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load authstor (cat &quot;server store&quot; s u cookie))
+      (send
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;)))))
+    (non-orig ppk)
+    (uniq-gen y)
+    (absent (y x))
+    (facts (neq u s))
+    (gen-st (cat &quot;server store&quot; s u cookie)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (defgenrule scissorsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (leads-to z0 i0 z2 i2))
+        (and (= z1 z2) (= i1 i2)))))
+  (defgenrule cakeRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (leads-to z0 i0 z1 i1)
+          (leads-to z0 i0 z2 i2) (prec z1 i1 z2 i2)) (false))))
+  (defgenrule no-interruption
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (leads-to z0 i0 z2 i2) (trans z1 i1)
+          (same-locn z0 i0 z1 i1) (prec z0 i0 z1 i1) (prec z1 i1 z2 i2))
+        (false))))
+  (defgenrule shearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (same-locn z0 i0 z2 i2)
+          (prec z0 i0 z2 i2))
+        (or (and (= z1 z2) (= i1 i2)) (prec z1 i1 z2 i2)))))
+  (defgenrule invShearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (same-locn z0 i0 z1 i1)
+          (leads-to z1 i1 z2 i2) (prec z0 i0 z2 i2))
+        (or (and (= z0 z1) (= i0 i1)) (prec z0 i0 z1 i1)))))
+  (defgenrule fact-servera-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p &quot;servera&quot; z (idx 4)) (p &quot;servera&quot; &quot;s&quot; z s)
+          (p &quot;servera&quot; &quot;u&quot; z u)) (fact neq u s))))
+  (defgenrule fact-serverr-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p &quot;serverr&quot; z (idx 5)) (p &quot;serverr&quot; &quot;s&quot; z s)
+          (p &quot;serverr&quot; &quot;u&quot; z u)) (fact neq u s))))
+  (defgenrule trRl_clienta-at-6
+    (forall ((z strd))
+      (implies (p &quot;clienta&quot; z (idx 7)) (trans z (idx 6)))))
+  (defgenrule trRl_clienta-at-5
+    (forall ((z strd))
+      (implies (p &quot;clienta&quot; z (idx 7)) (trans z (idx 5)))))
+  (defgenrule trRl_servera-at-6
+    (forall ((z strd))
+      (implies (p &quot;servera&quot; z (idx 7)) (trans z (idx 6)))))
+  (defgenrule trRl_servera-at-5
+    (forall ((z strd))
+      (implies (p &quot;servera&quot; z (idx 7)) (trans z (idx 5)))))
+  (defgenrule gen-st-clientr-0
+    (forall ((z strd) (cookie mesg) (s u name))
+      (implies
+        (and (p &quot;clientr&quot; z (idx 4)) (p &quot;clientr&quot; &quot;cookie&quot; z cookie)
+          (p &quot;clientr&quot; &quot;s&quot; z s) (p &quot;clientr&quot; &quot;u&quot; z u))
+        (gen-st (cat &quot;client store&quot; u s cookie)))))
+  (defgenrule gen-st-serverr-0
+    (forall ((z strd) (cookie data) (u s name))
+      (implies
+        (and (p &quot;serverr&quot; z (idx 5)) (p &quot;serverr&quot; &quot;cookie&quot; z cookie)
+          (p &quot;serverr&quot; &quot;u&quot; z u) (p &quot;serverr&quot; &quot;s&quot; z s))
+        (gen-st (cat &quot;server store&quot; s u cookie)))))
+  (lang (random32 atom) (random48 atom) (password atom) (httpreq atom)
+    (httpdata atom)))</pre>
+
+<p id="k78">Item <a href="#t78">78</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='529.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 529.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='489.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g>
+   <title>(enc response (hash &quot;s ap traffic&quot; cr sr (hash (exp (gen) (mul x y)) &quot;derived&quot;)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(enc cookie request (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul x y)) &quot;derived&quot;)))</title>
+   <circle cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg cookiestor (cat pt &quot;client store&quot; u s cookie))</title>
+   <circle style='fill: gray;' cx='39.960' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash (hash &quot;finished&quot; (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)))) (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))</title>
+   <circle cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat (cat sr (exp (gen) y)) (enc (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk))) (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr)))</title>
+   <circle style='fill: red;' cx='39.960' cy='189.960' r='6.000'/></g>
+  <g><title>(cat cr (exp (gen) x))</title>
+   <circle cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((cookie cookie) (response response) (request request) (cr cr) (sr sr) (spk spk) (u u) (s s) (ca ca) (cookiestor cookiestor) (x x) (y y))</title>
+   <text
+    x='39.960' y='77.460' style='text-anchor: middle;'>clientr</text>
+   </g>
+  <text x='39.960' y='39.960' style='text-anchor: middle;'>ca 78</text>
+  </svg></div>
+
+<pre>(defskeleton ca
+  (vars (cookie mesg) (response httpdata) (request httpreq)
+    (cr sr random32) (spk akey) (s ca u name) (pt pval)
+    (cookiestor locn) (x rndx) (y expt))
+  (defstrand clientr 6 (cookie cookie) (response response)
+    (request request) (cr cr) (sr sr) (spk spk) (u u) (s s) (ca ca)
+    (cookiestor cookiestor) (x x) (y y))
+  (non-orig (invk spk) (privk ca))
+  (uniq-orig cr sr)
+  (uniq-gen x)
+  (traces
+    ((send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)))
+      (load cookiestor (cat pt &quot;client store&quot; u s cookie))
+      (send
+        (enc cookie request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))))
+  (label 78)
+  (unrealized (0 1))
+  (origs (cr (0 0)))
+  (comment &quot;Not closed under rules&quot;))</pre>
+
+<p id="t147">Tree <a href="#top">147</a>, POV <a href="#k147">147</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='129.840pt' height='79.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 129.840 79.920' font-size='12.000'>
+  <text
+   x='89.880' y='26.040'
+   style='font-weight: bold; text-anchor: middle; fill: blue;'
+   onclick='window.open(&quot;#k148&quot;, &quot;_self&quot;)'>148</text>
+  <line
+   x1='39.960' y1='39.960' x2='89.880' y2='39.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <text
+   x='39.960' y='26.040' style='text-anchor: middle; fill: black;'
+   onclick='window.open(&quot;#k147&quot;, &quot;_self&quot;)'>147</text>
+  </svg></div>
+
+<pre>(defprotocol ca basic
+  (defrole clienta
+    (vars (u s ca name) (cr sr random32) (x rndx) (y expt) (spk akey)
+      (p password) (cookie any mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)))
+      (send
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc &quot;login-successful&quot; cookie
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (load cookiestor any)
+      (stor cookiestor (cat &quot;client store&quot; u s cookie))
+      (send
+        (enc cookie request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;)))))
+    (uniq-gen x))
+  (defrole clientr
+    (vars (u s ca name) (cr sr random32) (x rndx) (y expt) (spk akey)
+      (cookie mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)))
+      (load cookiestor (cat &quot;client store&quot; u s cookie))
+      (send
+        (enc cookie request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;)))))
+    (uniq-gen x)
+    (gen-st (cat &quot;client store&quot; u s cookie)))
+  (defrole servera
+    (vars (u s ca name) (cr sr random32) (y rndx) (x expt) (spk akey)
+      (p password) (cookie data) (ppk skey) (any mesg) (authstor locn)
+      (request httpreq) (response httpdata))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (recv
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (send
+        (enc &quot;login-successful&quot;
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load authstor any)
+      (stor authstor (cat &quot;server store&quot; s u cookie))
+      (recv
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (send
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;)))))
+    (non-orig ppk)
+    (uniq-orig cookie)
+    (uniq-gen y)
+    (absent (y x))
+    (facts (neq u s)))
+  (defrole serverr
+    (vars (u s ca name) (cr sr random32) (y rndx) (x expt) (spk akey)
+      (cookie data) (ppk skey) (authstor locn) (request httpreq)
+      (response httpdata))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (recv
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load authstor (cat &quot;server store&quot; s u cookie))
+      (send
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;)))))
+    (non-orig ppk)
+    (uniq-gen y)
+    (absent (y x))
+    (facts (neq u s))
+    (gen-st (cat &quot;server store&quot; s u cookie)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (defgenrule scissorsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (leads-to z0 i0 z2 i2))
+        (and (= z1 z2) (= i1 i2)))))
+  (defgenrule cakeRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (leads-to z0 i0 z1 i1)
+          (leads-to z0 i0 z2 i2) (prec z1 i1 z2 i2)) (false))))
+  (defgenrule no-interruption
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (leads-to z0 i0 z2 i2) (trans z1 i1)
+          (same-locn z0 i0 z1 i1) (prec z0 i0 z1 i1) (prec z1 i1 z2 i2))
+        (false))))
+  (defgenrule shearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (same-locn z0 i0 z2 i2)
+          (prec z0 i0 z2 i2))
+        (or (and (= z1 z2) (= i1 i2)) (prec z1 i1 z2 i2)))))
+  (defgenrule invShearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (same-locn z0 i0 z1 i1)
+          (leads-to z1 i1 z2 i2) (prec z0 i0 z2 i2))
+        (or (and (= z0 z1) (= i0 i1)) (prec z0 i0 z1 i1)))))
+  (defgenrule fact-servera-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p &quot;servera&quot; z (idx 4)) (p &quot;servera&quot; &quot;s&quot; z s)
+          (p &quot;servera&quot; &quot;u&quot; z u)) (fact neq u s))))
+  (defgenrule fact-serverr-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p &quot;serverr&quot; z (idx 5)) (p &quot;serverr&quot; &quot;s&quot; z s)
+          (p &quot;serverr&quot; &quot;u&quot; z u)) (fact neq u s))))
+  (defgenrule trRl_clienta-at-6
+    (forall ((z strd))
+      (implies (p &quot;clienta&quot; z (idx 7)) (trans z (idx 6)))))
+  (defgenrule trRl_clienta-at-5
+    (forall ((z strd))
+      (implies (p &quot;clienta&quot; z (idx 7)) (trans z (idx 5)))))
+  (defgenrule trRl_servera-at-6
+    (forall ((z strd))
+      (implies (p &quot;servera&quot; z (idx 7)) (trans z (idx 6)))))
+  (defgenrule trRl_servera-at-5
+    (forall ((z strd))
+      (implies (p &quot;servera&quot; z (idx 7)) (trans z (idx 5)))))
+  (defgenrule gen-st-clientr-0
+    (forall ((z strd) (cookie mesg) (s u name))
+      (implies
+        (and (p &quot;clientr&quot; z (idx 4)) (p &quot;clientr&quot; &quot;cookie&quot; z cookie)
+          (p &quot;clientr&quot; &quot;s&quot; z s) (p &quot;clientr&quot; &quot;u&quot; z u))
+        (gen-st (cat &quot;client store&quot; u s cookie)))))
+  (defgenrule gen-st-serverr-0
+    (forall ((z strd) (cookie data) (u s name))
+      (implies
+        (and (p &quot;serverr&quot; z (idx 5)) (p &quot;serverr&quot; &quot;cookie&quot; z cookie)
+          (p &quot;serverr&quot; &quot;u&quot; z u) (p &quot;serverr&quot; &quot;s&quot; z s))
+        (gen-st (cat &quot;server store&quot; s u cookie)))))
+  (lang (random32 atom) (random48 atom) (password atom) (httpreq atom)
+    (httpdata atom)))</pre>
+
+<p id="k147">Item <a href="#t147">147</a>, Child: <a href="#k148">148</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='679.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 679.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='639.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g>
+   <title>(enc (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;))) request (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='639.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg authstor (cat pt-0 &quot;server store&quot; s u cookie))</title>
+   <circle style='fill: gray;' cx='39.960' cy='564.960' r='6.000'/></g>
+  <g><title>(ch-msg authstor (cat pt any))</title>
+   <circle style='fill: gray;' cx='39.960' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(enc &quot;login-successful&quot; (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;))) (hash &quot;s ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc &quot;login&quot; u p (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)))) (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))</title>
+   <circle style='fill: blue;' cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat (cat sr (exp (gen) y)) (enc (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk))) (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)))</title>
+   <circle cx='39.960' cy='189.960' r='6.000'/></g>
+  <g><title>(cat cr (exp (gen) x))</title>
+   <circle style='fill: blue;' cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((any any) (cookie cookie) (request request) (p p) (cr cr) (sr sr) (ppk ppk) (spk spk) (u u) (s s) (ca ca) (authstor authstor) (y y) (x x))</title>
+   <text
+    x='39.960' y='77.460' style='text-anchor: middle;'>servera</text>
+   </g>
+  <text x='39.960' y='39.960' style='text-anchor: middle;'>ca 147</text>
+  </svg></div>
+
+<pre>(defskeleton ca
+  (vars (any mesg) (cookie data) (request httpreq) (p password)
+    (cr sr random32) (ppk skey) (spk akey) (s ca u name) (pt pt-0 pval)
+    (authstor locn) (y rndx) (x expt))
+  (defstrand servera 8 (any any) (cookie cookie) (request request) (p p)
+    (cr cr) (sr sr) (ppk ppk) (spk spk) (u u) (s s) (ca ca)
+    (authstor authstor) (y y) (x x))
+  (non-orig ppk (invk spk) (privk ca))
+  (uniq-orig cookie sr)
+  (uniq-gen y)
+  (absent (y x))
+  (traces
+    ((recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (recv
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (send
+        (enc &quot;login-successful&quot;
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load authstor (cat pt any))
+      (stor authstor (cat pt-0 &quot;server store&quot; s u cookie))
+      (recv
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))))
+  (label 147)
+  (realized)
+  (origs (pt-0 (0 6)) (sr (0 1)) (cookie (0 4)))
+  (comment &quot;Not closed under rules&quot;))</pre>
+
+<p id="k148">Item <a href="#t147">148</a>, Parent: <a href="#k147">147</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='679.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 679.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='639.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g>
+   <title>(enc (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;))) request (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='639.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg authstor (cat pt-0 &quot;server store&quot; s u cookie))</title>
+   <circle style='fill: gray;' cx='39.960' cy='564.960' r='6.000'/></g>
+  <g><title>(ch-msg authstor (cat pt any))</title>
+   <circle style='fill: gray;' cx='39.960' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(enc &quot;login-successful&quot; (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;))) (hash &quot;s ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc &quot;login&quot; u p (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)))) (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))</title>
+   <circle style='fill: blue;' cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat (cat sr (exp (gen) y)) (enc (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk))) (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)))</title>
+   <circle cx='39.960' cy='189.960' r='6.000'/></g>
+  <g><title>(cat cr (exp (gen) x))</title>
+   <circle style='fill: blue;' cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((any any) (cookie cookie) (request request) (p p) (cr cr) (sr sr) (ppk ppk) (spk spk) (u u) (s s) (ca ca) (authstor authstor) (y y) (x x))</title>
+   <text
+    x='39.960' y='77.460' style='text-anchor: middle;'>servera</text>
+   </g>
+  <text x='39.960' y='39.960' style='text-anchor: middle;'>ca 148</text>
+  </svg></div>
+
+<pre>(defskeleton ca
+  (vars (any mesg) (cookie data) (request httpreq) (p password)
+    (cr sr random32) (ppk skey) (spk akey) (s ca u name) (pt pt-0 pval)
+    (authstor locn) (y rndx) (x expt))
+  (defstrand servera 8 (any any) (cookie cookie) (request request) (p p)
+    (cr cr) (sr sr) (ppk ppk) (spk spk) (u u) (s s) (ca ca)
+    (authstor authstor) (y y) (x x))
+  (non-orig ppk (invk spk) (privk ca))
+  (uniq-orig cookie sr)
+  (uniq-gen y)
+  (absent (y x))
+  (facts (neq u s))
+  (rule fact-servera-neq0 trRl_servera-at-5 trRl_servera-at-6)
+  (traces
+    ((recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (recv
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (send
+        (enc &quot;login-successful&quot;
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load authstor (cat pt any))
+      (stor authstor (cat pt-0 &quot;server store&quot; s u cookie))
+      (recv
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))))
+  (label 148)
+  (parent 147)
+  (realized)
+  (shape)
+  (maps
+    ((0)
+      ((s s) (ca ca) (cr cr) (sr sr) (spk spk) (ppk ppk) (cookie cookie)
+        (u u) (y y) (x x) (p p) (any any) (authstor authstor)
+        (request request))))
+  (origs (pt-0 (0 6)) (sr (0 1)) (cookie (0 4))))</pre>
+
+<p id="t149">Tree <a href="#top">149</a>, POV <a href="#k149">149</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='79.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 79.920' font-size='12.000'>
+  <text
+   x='39.960' y='26.040' style='text-anchor: middle; fill: black;'
+   onclick='window.open(&quot;#k149&quot;, &quot;_self&quot;)'>149</text>
+  </svg></div>
+
+<pre>(defprotocol ca basic
+  (defrole clienta
+    (vars (u s ca name) (cr sr random32) (x rndx) (y expt) (spk akey)
+      (p password) (cookie any mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)))
+      (send
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc &quot;login-successful&quot; cookie
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (load cookiestor any)
+      (stor cookiestor (cat &quot;client store&quot; u s cookie))
+      (send
+        (enc cookie request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;)))))
+    (uniq-gen x))
+  (defrole clientr
+    (vars (u s ca name) (cr sr random32) (x rndx) (y expt) (spk akey)
+      (cookie mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)))
+      (load cookiestor (cat &quot;client store&quot; u s cookie))
+      (send
+        (enc cookie request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;)))))
+    (uniq-gen x)
+    (gen-st (cat &quot;client store&quot; u s cookie)))
+  (defrole servera
+    (vars (u s ca name) (cr sr random32) (y rndx) (x expt) (spk akey)
+      (p password) (cookie data) (ppk skey) (any mesg) (authstor locn)
+      (request httpreq) (response httpdata))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (recv
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (send
+        (enc &quot;login-successful&quot;
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load authstor any)
+      (stor authstor (cat &quot;server store&quot; s u cookie))
+      (recv
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (send
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;)))))
+    (non-orig ppk)
+    (uniq-orig cookie)
+    (uniq-gen y)
+    (absent (y x))
+    (facts (neq u s)))
+  (defrole serverr
+    (vars (u s ca name) (cr sr random32) (y rndx) (x expt) (spk akey)
+      (cookie data) (ppk skey) (authstor locn) (request httpreq)
+      (response httpdata))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (recv
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load authstor (cat &quot;server store&quot; s u cookie))
+      (send
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;)))))
+    (non-orig ppk)
+    (uniq-gen y)
+    (absent (y x))
+    (facts (neq u s))
+    (gen-st (cat &quot;server store&quot; s u cookie)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (defgenrule scissorsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (leads-to z0 i0 z2 i2))
+        (and (= z1 z2) (= i1 i2)))))
+  (defgenrule cakeRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (leads-to z0 i0 z1 i1)
+          (leads-to z0 i0 z2 i2) (prec z1 i1 z2 i2)) (false))))
+  (defgenrule no-interruption
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (leads-to z0 i0 z2 i2) (trans z1 i1)
+          (same-locn z0 i0 z1 i1) (prec z0 i0 z1 i1) (prec z1 i1 z2 i2))
+        (false))))
+  (defgenrule shearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (same-locn z0 i0 z2 i2)
+          (prec z0 i0 z2 i2))
+        (or (and (= z1 z2) (= i1 i2)) (prec z1 i1 z2 i2)))))
+  (defgenrule invShearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (same-locn z0 i0 z1 i1)
+          (leads-to z1 i1 z2 i2) (prec z0 i0 z2 i2))
+        (or (and (= z0 z1) (= i0 i1)) (prec z0 i0 z1 i1)))))
+  (defgenrule fact-servera-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p &quot;servera&quot; z (idx 4)) (p &quot;servera&quot; &quot;s&quot; z s)
+          (p &quot;servera&quot; &quot;u&quot; z u)) (fact neq u s))))
+  (defgenrule fact-serverr-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p &quot;serverr&quot; z (idx 5)) (p &quot;serverr&quot; &quot;s&quot; z s)
+          (p &quot;serverr&quot; &quot;u&quot; z u)) (fact neq u s))))
+  (defgenrule trRl_clienta-at-6
+    (forall ((z strd))
+      (implies (p &quot;clienta&quot; z (idx 7)) (trans z (idx 6)))))
+  (defgenrule trRl_clienta-at-5
+    (forall ((z strd))
+      (implies (p &quot;clienta&quot; z (idx 7)) (trans z (idx 5)))))
+  (defgenrule trRl_servera-at-6
+    (forall ((z strd))
+      (implies (p &quot;servera&quot; z (idx 7)) (trans z (idx 6)))))
+  (defgenrule trRl_servera-at-5
+    (forall ((z strd))
+      (implies (p &quot;servera&quot; z (idx 7)) (trans z (idx 5)))))
+  (defgenrule gen-st-clientr-0
+    (forall ((z strd) (cookie mesg) (s u name))
+      (implies
+        (and (p &quot;clientr&quot; z (idx 4)) (p &quot;clientr&quot; &quot;cookie&quot; z cookie)
+          (p &quot;clientr&quot; &quot;s&quot; z s) (p &quot;clientr&quot; &quot;u&quot; z u))
+        (gen-st (cat &quot;client store&quot; u s cookie)))))
+  (defgenrule gen-st-serverr-0
+    (forall ((z strd) (cookie data) (u s name))
+      (implies
+        (and (p &quot;serverr&quot; z (idx 5)) (p &quot;serverr&quot; &quot;cookie&quot; z cookie)
+          (p &quot;serverr&quot; &quot;u&quot; z u) (p &quot;serverr&quot; &quot;s&quot; z s))
+        (gen-st (cat &quot;server store&quot; s u cookie)))))
+  (lang (random32 atom) (random48 atom) (password atom) (httpreq atom)
+    (httpdata atom)))</pre>
+
+<p id="k149">Item <a href="#t149">149</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='454.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 454.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='414.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g>
+   <title>(ch-msg authstor (cat pt &quot;server store&quot; s u cookie))</title>
+   <circle style='fill: gray;' cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;))) request (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle style='fill: red;' cx='39.960' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)))) (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))</title>
+   <circle style='fill: blue;' cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat (cat sr (exp (gen) y)) (enc (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk))) (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)))</title>
+   <circle cx='39.960' cy='189.960' r='6.000'/></g>
+  <g><title>(cat cr (exp (gen) x))</title>
+   <circle style='fill: blue;' cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((cookie cookie) (request request) (cr cr) (sr sr) (ppk ppk) (spk spk) (u u) (s s) (ca ca) (authstor authstor) (y y) (x x))</title>
+   <text
+    x='39.960' y='77.460' style='text-anchor: middle;'>serverr</text>
+   </g>
+  <text x='39.960' y='39.960' style='text-anchor: middle;'>ca 149</text>
+  </svg></div>
+
+<pre>(defskeleton ca
+  (vars (cookie data) (request httpreq) (cr sr random32) (ppk skey)
+    (spk akey) (s ca u name) (pt pval) (authstor locn) (y rndx)
+    (x expt))
+  (defstrand serverr 5 (cookie cookie) (request request) (cr cr) (sr sr)
+    (ppk ppk) (spk spk) (u u) (s s) (ca ca) (authstor authstor) (y y)
+    (x x))
+  (non-orig ppk (invk spk) (privk ca))
+  (uniq-orig sr)
+  (uniq-gen y)
+  (absent (y x))
+  (traces
+    ((recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (recv
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load authstor (cat pt &quot;server store&quot; s u cookie))))
+  (label 149)
+  (unrealized (0 3))
+  (origs (sr (0 1)))
+  (comment &quot;Not closed under rules&quot;))</pre>
+
+<p id="t152">Tree <a href="#top">152</a>, POV <a href="#k152">152</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='129.840pt' height='79.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 129.840 79.920' font-size='12.000'>
+  <text
+   x='89.880' y='26.040'
+   style='font-weight: bold; text-anchor: middle; fill: blue;'
+   onclick='window.open(&quot;#k189&quot;, &quot;_self&quot;)'>189</text>
+  <line
+   x1='39.960' y1='39.960' x2='89.880' y2='39.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <text
+   x='39.960' y='26.040' style='text-anchor: middle; fill: black;'
+   onclick='window.open(&quot;#k152&quot;, &quot;_self&quot;)'>152</text>
+  </svg></div>
+
+<pre>(defprotocol ca basic
+  (defrole clienta
+    (vars (u s ca name) (cr sr random32) (x rndx) (y expt) (spk akey)
+      (p password) (cookie any mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)))
+      (send
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc &quot;login-successful&quot; cookie
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (load cookiestor any)
+      (stor cookiestor (cat &quot;client store&quot; u s cookie))
+      (send
+        (enc cookie request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;)))))
+    (uniq-gen x))
+  (defrole clientr
+    (vars (u s ca name) (cr sr random32) (x rndx) (y expt) (spk akey)
+      (cookie mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)))
+      (load cookiestor (cat &quot;client store&quot; u s cookie))
+      (send
+        (enc cookie request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;)))))
+    (uniq-gen x)
+    (gen-st (cat &quot;client store&quot; u s cookie)))
+  (defrole servera
+    (vars (u s ca name) (cr sr random32) (y rndx) (x expt) (spk akey)
+      (p password) (cookie data) (ppk skey) (any mesg) (authstor locn)
+      (request httpreq) (response httpdata))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (recv
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (send
+        (enc &quot;login-successful&quot;
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load authstor any)
+      (stor authstor (cat &quot;server store&quot; s u cookie))
+      (recv
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (send
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;)))))
+    (non-orig ppk)
+    (uniq-orig cookie)
+    (uniq-gen y)
+    (absent (y x))
+    (facts (neq u s)))
+  (defrole serverr
+    (vars (u s ca name) (cr sr random32) (y rndx) (x expt) (spk akey)
+      (cookie data) (ppk skey) (authstor locn) (request httpreq)
+      (response httpdata))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (recv
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load authstor (cat &quot;server store&quot; s u cookie))
+      (send
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;)))))
+    (non-orig ppk)
+    (uniq-gen y)
+    (absent (y x))
+    (facts (neq u s))
+    (gen-st (cat &quot;server store&quot; s u cookie)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (defgenrule scissorsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (leads-to z0 i0 z2 i2))
+        (and (= z1 z2) (= i1 i2)))))
+  (defgenrule cakeRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (leads-to z0 i0 z1 i1)
+          (leads-to z0 i0 z2 i2) (prec z1 i1 z2 i2)) (false))))
+  (defgenrule no-interruption
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (leads-to z0 i0 z2 i2) (trans z1 i1)
+          (same-locn z0 i0 z1 i1) (prec z0 i0 z1 i1) (prec z1 i1 z2 i2))
+        (false))))
+  (defgenrule shearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (same-locn z0 i0 z2 i2)
+          (prec z0 i0 z2 i2))
+        (or (and (= z1 z2) (= i1 i2)) (prec z1 i1 z2 i2)))))
+  (defgenrule invShearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (same-locn z0 i0 z1 i1)
+          (leads-to z1 i1 z2 i2) (prec z0 i0 z2 i2))
+        (or (and (= z0 z1) (= i0 i1)) (prec z0 i0 z1 i1)))))
+  (defgenrule fact-servera-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p &quot;servera&quot; z (idx 4)) (p &quot;servera&quot; &quot;s&quot; z s)
+          (p &quot;servera&quot; &quot;u&quot; z u)) (fact neq u s))))
+  (defgenrule fact-serverr-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p &quot;serverr&quot; z (idx 5)) (p &quot;serverr&quot; &quot;s&quot; z s)
+          (p &quot;serverr&quot; &quot;u&quot; z u)) (fact neq u s))))
+  (defgenrule trRl_clienta-at-6
+    (forall ((z strd))
+      (implies (p &quot;clienta&quot; z (idx 7)) (trans z (idx 6)))))
+  (defgenrule trRl_clienta-at-5
+    (forall ((z strd))
+      (implies (p &quot;clienta&quot; z (idx 7)) (trans z (idx 5)))))
+  (defgenrule trRl_servera-at-6
+    (forall ((z strd))
+      (implies (p &quot;servera&quot; z (idx 7)) (trans z (idx 6)))))
+  (defgenrule trRl_servera-at-5
+    (forall ((z strd))
+      (implies (p &quot;servera&quot; z (idx 7)) (trans z (idx 5)))))
+  (defgenrule gen-st-clientr-0
+    (forall ((z strd) (cookie mesg) (s u name))
+      (implies
+        (and (p &quot;clientr&quot; z (idx 4)) (p &quot;clientr&quot; &quot;cookie&quot; z cookie)
+          (p &quot;clientr&quot; &quot;s&quot; z s) (p &quot;clientr&quot; &quot;u&quot; z u))
+        (gen-st (cat &quot;client store&quot; u s cookie)))))
+  (defgenrule gen-st-serverr-0
+    (forall ((z strd) (cookie data) (u s name))
+      (implies
+        (and (p &quot;serverr&quot; z (idx 5)) (p &quot;serverr&quot; &quot;cookie&quot; z cookie)
+          (p &quot;serverr&quot; &quot;u&quot; z u) (p &quot;serverr&quot; &quot;s&quot; z s))
+        (gen-st (cat &quot;server store&quot; s u cookie)))))
+  (lang (random32 atom) (random48 atom) (password atom) (httpreq atom)
+    (httpdata atom)))</pre>
+
+<p id="k152">Item <a href="#t152">152</a>, Child: <a href="#k189">189</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='754.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 754.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='714.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g>
+   <title>(enc response (hash &quot;s ap traffic&quot; cr sr (hash (exp (gen) (mul x y)) &quot;derived&quot;)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='714.960' r='6.000'/></g>
+  <g>
+   <title>(enc (enc cookie (hash ppk (hash (exp (gen) (mul x y)) &quot;derived&quot;))) request (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul x y)) &quot;derived&quot;)))</title>
+   <circle cx='39.960' cy='639.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg cookiestor (cat pt-0 &quot;client store&quot; u s (enc cookie (hash ppk (hash (exp (gen) (mul x y)) &quot;derived&quot;)))))</title>
+   <circle style='fill: gray;' cx='39.960' cy='564.960' r='6.000'/></g>
+  <g><title>(ch-msg cookiestor (cat pt any))</title>
+   <circle style='fill: gray;' cx='39.960' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(enc &quot;login-successful&quot; (enc cookie (hash ppk (hash (exp (gen) (mul x y)) &quot;derived&quot;))) (hash &quot;s ap traffic&quot; cr sr (hash (exp (gen) (mul x y)) &quot;derived&quot;)))</title>
+   <circle style='fill: red;' cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc &quot;login&quot; u p (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul x y)) &quot;derived&quot;)))</title>
+   <circle cx='39.960' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash (hash &quot;finished&quot; (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)))) (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))</title>
+   <circle cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat (cat sr (exp (gen) y)) (enc (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk))) (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr)))</title>
+   <circle style='fill: red;' cx='39.960' cy='189.960' r='6.000'/></g>
+  <g><title>(cat cr (exp (gen) x))</title>
+   <circle cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((cookie (enc cookie (hash ppk (hash (exp (gen) (mul x y)) &quot;derived&quot;)))) (any any) (response response) (request request) (p p) (cr cr) (sr sr) (spk spk) (u u) (s s) (ca ca) (cookiestor cookiestor) (x x) (y y))</title>
+   <text
+    x='39.960' y='77.460' style='text-anchor: middle;'>clienta</text>
+   </g>
+  <text x='39.960' y='39.960' style='text-anchor: middle;'>ca 152</text>
+  </svg></div>
+
+<pre>(defskeleton ca
+  (vars (any mesg) (cookie data) (response httpdata) (request httpreq)
+    (p password) (cr sr random32) (ppk skey) (spk akey) (u s ca name)
+    (pt pt-0 pval) (cookiestor locn) (x rndx) (y expt))
+  (defstrand clienta 9
+    (cookie
+      (enc cookie (hash ppk (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+    (any any) (response response) (request request) (p p) (cr cr)
+    (sr sr) (spk spk) (u u) (s s) (ca ca) (cookiestor cookiestor) (x x)
+    (y y))
+  (non-orig ppk (invk spk) (privk ca))
+  (uniq-orig cr sr)
+  (uniq-gen x)
+  (goals
+    (forall
+      ((z strd) (cookie data) (u s ca name) (spk akey) (cr sr random32)
+        (ppk skey) (x rndx) (y expt))
+      (implies
+        (and (p &quot;clienta&quot; z 9)
+          (p &quot;clienta&quot; &quot;cookie&quot; z
+            (enc cookie
+              (hash ppk (hash (exp (exp (gen) y) x) &quot;derived&quot;))))
+          (p &quot;clienta&quot; &quot;u&quot; z u) (p &quot;clienta&quot; &quot;s&quot; z s)
+          (p &quot;clienta&quot; &quot;spk&quot; z spk) (p &quot;clienta&quot; &quot;ca&quot; z ca)
+          (p &quot;clienta&quot; &quot;cr&quot; z cr) (p &quot;clienta&quot; &quot;sr&quot; z sr)
+          (p &quot;clienta&quot; &quot;x&quot; z x) (p &quot;clienta&quot; &quot;y&quot; z y) (non (privk ca))
+          (non (invk spk)) (non ppk) (uniq sr) (uniq-at cr z 0)
+          (ugen-at x z 0))
+        (exists ((z0 strd))
+          (and (p &quot;servera&quot; z0 9) (p &quot;servera&quot; &quot;cookie&quot; z0 cookie)
+            (p &quot;servera&quot; &quot;u&quot; z0 u) (p &quot;servera&quot; &quot;s&quot; z0 s)
+            (uniq-at cookie z0 4) (fact neq u s))))))
+  (traces
+    ((send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)))
+      (send
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc &quot;login-successful&quot;
+          (enc cookie (hash ppk (hash (exp (gen) (mul x y)) &quot;derived&quot;)))
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (load cookiestor (cat pt any))
+      (stor cookiestor
+        (cat pt-0 &quot;client store&quot; u s
+          (enc cookie
+            (hash ppk (hash (exp (gen) (mul x y)) &quot;derived&quot;)))))
+      (send
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul x y)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))))
+  (label 152)
+  (unrealized (0 1) (0 4))
+  (origs (pt-0 (0 6)) (cr (0 0)))
+  (comment &quot;Not closed under rules&quot;))</pre>
+
+<p id="k189">Item <a href="#t152">189</a>, Parent: <a href="#k152">152</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='179.880pt' height='754.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 179.880 754.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='139.920' y1='114.960' x2='139.920' y2='714.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='714.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <path
+   d='M 139.920 714.960 Q 92.940 714.960 45.960 714.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc response (hash &quot;s ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle cx='139.920' cy='714.960' r='6.000'/></g>
+  <g>
+   <title>(enc (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;))) request (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle style='fill: blue;' cx='139.920' cy='639.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg authstor (cat pt-2 &quot;server store&quot; s u cookie))</title>
+   <circle style='fill: gray;' cx='139.920' cy='564.960' r='6.000'/></g>
+  <g><title>(ch-msg authstor (cat pt-1 any-0))</title>
+   <circle style='fill: gray;' cx='139.920' cy='489.960' r='6.000'/></g>
+  <path
+   d='M 139.920 414.960 Q 92.940 414.960 45.960 414.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc &quot;login-successful&quot; (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;))) (hash &quot;s ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle cx='139.920' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc &quot;login&quot; u p (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle style='fill: blue;' cx='139.920' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)))) (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))</title>
+   <circle style='fill: blue;' cx='139.920' cy='264.960' r='6.000'/></g>
+  <path
+   d='M 139.920 189.960 Q 92.940 189.960 45.960 189.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(cat (cat sr (exp (gen) y)) (enc (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk))) (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)))</title>
+   <circle cx='139.920' cy='189.960' r='6.000'/></g>
+  <g><title>(cat cr (exp (gen) x))</title>
+   <circle style='fill: blue;' cx='139.920' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>(enc response (hash &quot;s ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='714.960' r='6.000'/></g>
+  <path
+   d='M 39.960 639.960 Q 86.940 639.960 133.920 639.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;))) request (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle cx='39.960' cy='639.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg cookiestor (cat pt-0 &quot;client store&quot; u s (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))))</title>
+   <circle style='fill: gray;' cx='39.960' cy='564.960' r='6.000'/></g>
+  <g><title>(ch-msg cookiestor (cat pt any))</title>
+   <circle style='fill: gray;' cx='39.960' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(enc &quot;login-successful&quot; (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;))) (hash &quot;s ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='414.960' r='6.000'/></g>
+  <path
+   d='M 39.960 339.960 Q 86.940 339.960 133.920 339.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc &quot;login&quot; u p (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul y x)) &quot;derived&quot;)))</title>
+   <circle cx='39.960' cy='339.960' r='6.000'/></g>
+  <path
+   d='M 39.960 264.960 Q 86.940 264.960 133.920 264.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)))) (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))</title>
+   <circle cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat (cat sr (exp (gen) y)) (enc (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk))) (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='189.960' r='6.000'/></g>
+  <path
+   d='M 39.960 114.960 Q 86.940 114.960 133.920 114.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g><title>(cat cr (exp (gen) x))</title>
+   <circle cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((any any-0) (cookie cookie) (response response) (request request) (p p) (cr cr) (sr sr) (ppk ppk) (spk spk) (u u) (s s) (ca ca) (authstor authstor) (y y) (x x))</title>
+   <text
+    x='139.920' y='77.460' style='text-anchor: middle;'>servera</text>
+   </g>
+  <g>
+   <title>((cookie (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))) (any any) (response response) (request request) (p p) (cr cr) (sr sr) (spk spk) (u u) (s s) (ca ca) (cookiestor cookiestor) (x x) (y y))</title>
+   <text
+    x='39.960' y='77.460' style='text-anchor: middle;'>clienta</text>
+   </g>
+  <text x='89.940' y='39.960' style='text-anchor: middle;'>ca 189</text>
+  </svg></div>
+
+<pre>(defskeleton ca
+  (vars (any any-0 mesg) (cookie data) (response httpdata)
+    (request httpreq) (p password) (cr sr random32) (ppk skey)
+    (spk akey) (u s ca name) (pt pt-0 pt-1 pt-2 pval)
+    (cookiestor authstor locn) (y x rndx))
+  (defstrand clienta 9
+    (cookie
+      (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+    (any any) (response response) (request request) (p p) (cr cr)
+    (sr sr) (spk spk) (u u) (s s) (ca ca) (cookiestor cookiestor) (x x)
+    (y y))
+  (defstrand servera 9 (any any-0) (cookie cookie) (response response)
+    (request request) (p p) (cr cr) (sr sr) (ppk ppk) (spk spk) (u u)
+    (s s) (ca ca) (authstor authstor) (y y) (x x))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((0 3) (1 3)) ((0 7) (1 7))
+    ((1 1) (0 1)) ((1 4) (0 4)) ((1 8) (0 8)))
+  (non-orig ppk (invk spk) (privk ca))
+  (uniq-orig cookie cr sr)
+  (uniq-gen y x)
+  (absent (y x))
+  (facts (neq u s))
+  (rule fact-servera-neq0 trRl_clienta-at-5 trRl_clienta-at-6
+    trRl_servera-at-5 trRl_servera-at-6)
+  (operation encryption-test (displaced 2 0 clienta 8)
+    (enc
+      (enc cookie (hash ppk (hash (exp (gen) (mul x-0 y)) &quot;derived&quot;)))
+      request-0
+      (hash &quot;c ap traffic&quot; cr sr
+        (hash (exp (gen) (mul x-0 y)) &quot;derived&quot;))) (1 7))
+  (traces
+    ((send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (send
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (recv
+        (enc &quot;login-successful&quot;
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load cookiestor (cat pt any))
+      (stor cookiestor
+        (cat pt-0 &quot;client store&quot; u s
+          (enc cookie
+            (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))))
+      (send
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;)))))
+    ((recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (recv
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (send
+        (enc &quot;login-successful&quot;
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load authstor (cat pt-1 any-0))
+      (stor authstor (cat pt-2 &quot;server store&quot; s u cookie))
+      (recv
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (send
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))))
+  (label 189)
+  (parent 152)
+  (realized)
+  (shape)
+  (satisfies yes)
+  (maps
+    ((0)
+      ((cookie cookie) (u u) (s s) (ca ca) (spk spk) (cr cr) (sr sr)
+        (ppk ppk) (x x) (y y) (p p) (any any) (cookiestor cookiestor)
+        (request request) (response response))))
+  (origs (pt-0 (0 6)) (cookie (1 4)) (pt-2 (1 6)) (sr (1 1))
+    (cr (0 0))))</pre>
+
+<p id="t215">Tree <a href="#top">215</a>, POV <a href="#k215">215</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='79.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 79.920' font-size='12.000'>
+  <text
+   x='39.960' y='26.040' style='text-anchor: middle; fill: black;'
+   onclick='window.open(&quot;#k215&quot;, &quot;_self&quot;)'>215</text>
+  </svg></div>
+
+<pre>(defprotocol ca basic
+  (defrole clienta
+    (vars (u s ca name) (cr sr random32) (x rndx) (y expt) (spk akey)
+      (p password) (cookie any mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)))
+      (send
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc &quot;login-successful&quot; cookie
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (load cookiestor any)
+      (stor cookiestor (cat &quot;client store&quot; u s cookie))
+      (send
+        (enc cookie request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;)))))
+    (uniq-gen x))
+  (defrole clientr
+    (vars (u s ca name) (cr sr random32) (x rndx) (y expt) (spk akey)
+      (cookie mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)))
+      (load cookiestor (cat &quot;client store&quot; u s cookie))
+      (send
+        (enc cookie request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;)))))
+    (uniq-gen x)
+    (gen-st (cat &quot;client store&quot; u s cookie)))
+  (defrole servera
+    (vars (u s ca name) (cr sr random32) (y rndx) (x expt) (spk akey)
+      (p password) (cookie data) (ppk skey) (any mesg) (authstor locn)
+      (request httpreq) (response httpdata))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (recv
+        (enc &quot;login&quot; u p
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (send
+        (enc &quot;login-successful&quot;
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load authstor any)
+      (stor authstor (cat &quot;server store&quot; s u cookie))
+      (recv
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (send
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;)))))
+    (non-orig ppk)
+    (uniq-orig cookie)
+    (uniq-gen y)
+    (absent (y x))
+    (facts (neq u s)))
+  (defrole serverr
+    (vars (u s ca name) (cr sr random32) (y rndx) (x expt) (spk akey)
+      (cookie data) (ppk skey) (authstor locn) (request httpreq)
+      (response httpdata))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul y x)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul y x)) &quot;c hs traffic&quot; cr sr)))
+      (recv
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul y x)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;))))
+      (load authstor (cat &quot;server store&quot; s u cookie))
+      (send
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul y x)) &quot;derived&quot;)))))
+    (non-orig ppk)
+    (uniq-gen y)
+    (absent (y x))
+    (facts (neq u s))
+    (gen-st (cat &quot;server store&quot; s u cookie)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (defgenrule scissorsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (leads-to z0 i0 z2 i2))
+        (and (= z1 z2) (= i1 i2)))))
+  (defgenrule cakeRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (leads-to z0 i0 z1 i1)
+          (leads-to z0 i0 z2 i2) (prec z1 i1 z2 i2)) (false))))
+  (defgenrule no-interruption
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (leads-to z0 i0 z2 i2) (trans z1 i1)
+          (same-locn z0 i0 z1 i1) (prec z0 i0 z1 i1) (prec z1 i1 z2 i2))
+        (false))))
+  (defgenrule shearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (same-locn z0 i0 z2 i2)
+          (prec z0 i0 z2 i2))
+        (or (and (= z1 z2) (= i1 i2)) (prec z1 i1 z2 i2)))))
+  (defgenrule invShearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (same-locn z0 i0 z1 i1)
+          (leads-to z1 i1 z2 i2) (prec z0 i0 z2 i2))
+        (or (and (= z0 z1) (= i0 i1)) (prec z0 i0 z1 i1)))))
+  (defgenrule fact-servera-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p &quot;servera&quot; z (idx 4)) (p &quot;servera&quot; &quot;s&quot; z s)
+          (p &quot;servera&quot; &quot;u&quot; z u)) (fact neq u s))))
+  (defgenrule fact-serverr-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p &quot;serverr&quot; z (idx 5)) (p &quot;serverr&quot; &quot;s&quot; z s)
+          (p &quot;serverr&quot; &quot;u&quot; z u)) (fact neq u s))))
+  (defgenrule trRl_clienta-at-6
+    (forall ((z strd))
+      (implies (p &quot;clienta&quot; z (idx 7)) (trans z (idx 6)))))
+  (defgenrule trRl_clienta-at-5
+    (forall ((z strd))
+      (implies (p &quot;clienta&quot; z (idx 7)) (trans z (idx 5)))))
+  (defgenrule trRl_servera-at-6
+    (forall ((z strd))
+      (implies (p &quot;servera&quot; z (idx 7)) (trans z (idx 6)))))
+  (defgenrule trRl_servera-at-5
+    (forall ((z strd))
+      (implies (p &quot;servera&quot; z (idx 7)) (trans z (idx 5)))))
+  (defgenrule gen-st-clientr-0
+    (forall ((z strd) (cookie mesg) (s u name))
+      (implies
+        (and (p &quot;clientr&quot; z (idx 4)) (p &quot;clientr&quot; &quot;cookie&quot; z cookie)
+          (p &quot;clientr&quot; &quot;s&quot; z s) (p &quot;clientr&quot; &quot;u&quot; z u))
+        (gen-st (cat &quot;client store&quot; u s cookie)))))
+  (defgenrule gen-st-serverr-0
+    (forall ((z strd) (cookie data) (u s name))
+      (implies
+        (and (p &quot;serverr&quot; z (idx 5)) (p &quot;serverr&quot; &quot;cookie&quot; z cookie)
+          (p &quot;serverr&quot; &quot;u&quot; z u) (p &quot;serverr&quot; &quot;s&quot; z s))
+        (gen-st (cat &quot;server store&quot; s u cookie)))))
+  (lang (random32 atom) (random48 atom) (password atom) (httpreq atom)
+    (httpdata atom)))</pre>
+
+<p id="k215">Item <a href="#t215">215</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='529.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 529.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='489.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g>
+   <title>(enc response (hash &quot;s ap traffic&quot; cr sr (hash (exp (gen) (mul x y)) &quot;derived&quot;)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(enc (enc cookie (hash ppk (hash (exp (gen) (mul x y)) &quot;derived&quot;))) request (hash &quot;c ap traffic&quot; cr sr (hash (exp (gen) (mul x y)) &quot;derived&quot;)))</title>
+   <circle cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg cookiestor (cat pt &quot;client store&quot; u s (enc cookie (hash ppk (hash (exp (gen) (mul x y)) &quot;derived&quot;)))))</title>
+   <circle style='fill: orange;' cx='39.960' cy='339.960' r='6.000'/>
+   </g>
+  <g>
+   <title>(enc (hash (hash &quot;finished&quot; (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)))) (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))</title>
+   <circle cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat (cat sr (exp (gen) y)) (enc (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk)) (hash (hash &quot;finished&quot; (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr)) (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) (cat s spk (enc (hash s spk) (privk ca))) (enc (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk (enc (hash s spk) (privk ca))) (invk spk))) (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr)))</title>
+   <circle style='fill: red;' cx='39.960' cy='189.960' r='6.000'/></g>
+  <g><title>(cat cr (exp (gen) x))</title>
+   <circle cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((cookie (enc cookie (hash ppk (hash (exp (gen) (mul x y)) &quot;derived&quot;)))) (response response) (request request) (cr cr) (sr sr) (spk spk) (u u) (s s) (ca ca) (cookiestor cookiestor) (x x) (y y))</title>
+   <text
+    x='39.960' y='77.460' style='text-anchor: middle;'>clientr</text>
+   </g>
+  <text x='39.960' y='39.960' style='text-anchor: middle;'>ca 215</text>
+  </svg></div>
+
+<pre>(defskeleton ca
+  (vars (cookie data) (response httpdata) (request httpreq)
+    (cr sr random32) (ppk skey) (spk akey) (u s ca name) (pt pval)
+    (cookiestor locn) (x rndx) (y expt))
+  (defstrand clientr 6
+    (cookie
+      (enc cookie (hash ppk (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+    (response response) (request request) (cr cr) (sr sr) (spk spk)
+    (u u) (s s) (ca ca) (cookiestor cookiestor) (x x) (y y))
+  (non-orig ppk (invk spk) (privk ca))
+  (uniq-orig cr sr)
+  (uniq-gen x)
+  (goals
+    (forall
+      ((z strd) (cookie data) (u s ca name) (cr sr random32) (x rndx)
+        (y expt) (spk akey) (ppk skey))
+      (implies
+        (and (p &quot;clientr&quot; z 6)
+          (p &quot;clientr&quot; &quot;cookie&quot; z
+            (enc cookie
+              (hash ppk (hash (exp (exp (gen) y) x) &quot;derived&quot;))))
+          (p &quot;clientr&quot; &quot;u&quot; z u) (p &quot;clientr&quot; &quot;s&quot; z s)
+          (p &quot;clientr&quot; &quot;spk&quot; z spk) (p &quot;clientr&quot; &quot;ca&quot; z ca)
+          (p &quot;clientr&quot; &quot;cr&quot; z cr) (p &quot;clientr&quot; &quot;sr&quot; z sr)
+          (p &quot;clientr&quot; &quot;x&quot; z x) (p &quot;clientr&quot; &quot;y&quot; z y) (non (privk ca))
+          (non (invk spk)) (non ppk) (uniq sr) (uniq-at cr z 0)
+          (ugen-at x z 0))
+        (exists ((z0 strd))
+          (and (p &quot;servera&quot; z0 7) (p &quot;servera&quot; &quot;cookie&quot; z0 cookie)
+            (p &quot;servera&quot; &quot;u&quot; z0 u) (p &quot;servera&quot; &quot;s&quot; z0 s)
+            (uniq-at cookie z0 4) (fact neq u s))))))
+  (traces
+    ((send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk)))
+            (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))))
+      (send
+        (enc
+          (hash
+            (hash &quot;finished&quot;
+              (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat s spk (enc (hash s spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s spk
+                (enc (hash s spk) (privk ca))) (invk spk))
+            (hash
+              (hash &quot;finished&quot;
+                (hash (exp (gen) (mul x y)) &quot;s hs traffic&quot; cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat s spk (enc (hash s spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) s
+                  spk (enc (hash s spk) (privk ca))) (invk spk))))
+          (hash (exp (gen) (mul x y)) &quot;c hs traffic&quot; cr sr)))
+      (load cookiestor
+        (cat pt &quot;client store&quot; u s
+          (enc cookie
+            (hash ppk (hash (exp (gen) (mul x y)) &quot;derived&quot;)))))
+      (send
+        (enc
+          (enc cookie (hash ppk (hash (exp (gen) (mul x y)) &quot;derived&quot;)))
+          request
+          (hash &quot;c ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))
+      (recv
+        (enc response
+          (hash &quot;s ap traffic&quot; cr sr
+            (hash (exp (gen) (mul x y)) &quot;derived&quot;))))))
+  (label 215)
+  (unrealized (0 1) (0 3))
+  (origs (cr (0 0)))
+  (comment &quot;Not closed under rules&quot;))</pre>
+
+</body>
+</html>

@@ -1,0 +1,695 @@
+<?xml version="1.0"?>
+<!-- CPSA 4.4.2 -->
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+ <title>Blanchet's Simple Example Protocol</title>
+ <meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+ <style>
+  svg.diagram { border-width: 1px; border-style: solid }
+ </style>
+</head>
+<body>
+
+<pre>(comment &quot;CPSA 4.4.2&quot;)
+(comment &quot;Extracted shapes&quot;)
+(herald &quot;Blanchet&apos;s Simple Example Protocol&quot;
+  (comment &quot;There is a flaw in this protocol by design&quot;))
+(comment &quot;CPSA 4.4.2&quot;)
+(comment &quot;All input read from blanchet_binding.scm&quot;)</pre>
+
+<p id="top">Trees: <a href="#t0">0</a> <a href="#t7">7</a>.</p>
+
+<p id="t0">Tree <a href="#top">0</a>, POV <a href="#k0">0</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='129.840pt' height='79.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 129.840 79.920' font-size='12.000'>
+  <text
+   x='89.880' y='26.040'
+   style='font-weight: bold; text-anchor: middle; fill: blue;'
+   onclick='window.open(&quot;#k5&quot;, &quot;_self&quot;)'>5</text>
+  <line
+   x1='39.960' y1='39.960' x2='89.880' y2='39.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <text
+   x='39.960' y='26.040' style='text-anchor: middle; fill: black;'
+   onclick='window.open(&quot;#k0&quot;, &quot;_self&quot;)'>0</text>
+  </svg></div>
+
+<pre>(defprotocol blanchet-bound basic
+  (defrole init
+    (vars (a b name) (s skey) (d text) (r1 r2 data))
+    (trace
+      (send
+        (cat (enc (enc s (privk a)) (pubk b))
+          (enc
+            (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot;
+              s) (privk a))))
+      (recv
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))))
+      (send
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))
+          (privk a)))))
+  (defrole resp
+    (vars (a b name) (s skey) (d text) (r1 r2 data))
+    (trace
+      (recv
+        (cat (enc (enc s (privk a)) (pubk b))
+          (enc
+            (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot;
+              s) (privk a))))
+      (send
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))))
+      (recv
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))
+          (privk a)))))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (comment &quot;Blanchet&apos;s protocol&quot;))</pre>
+
+<p id="k0">Item <a href="#t0">0</a>, Child: <a href="#k5">5</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='304.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 304.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='264.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g>
+   <title>(enc (enc (hash (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b)) (privk a))</title>
+   <circle cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc d s) (enc (hash (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b)))</title>
+   <circle style='fill: red;' cx='39.960' cy='189.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc s (privk a)) (pubk b)) (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)))</title>
+   <circle cx='39.960' cy='114.960' r='6.000'/></g>
+  <g><title>((r1 r1) (r2 r2) (s s) (d d) (a a) (b b))</title>
+   <text x='39.960' y='77.460' style='text-anchor: middle;'>init</text>
+   </g>
+  <text
+   x='39.960' y='39.960'
+   style='text-anchor: middle;'>blanchet-bound 0</text></svg></div>
+
+<pre>(defskeleton blanchet-bound
+  (vars (r1 r2 data) (s skey) (d text) (a b name))
+  (defstrand init 3 (r1 r1) (r2 r2) (s s) (d d) (a a) (b b))
+  (non-orig (privk a) (privk b))
+  (uniq-gen r1 s)
+  (goals
+    (forall ((a b name) (s skey) (d text) (r1 r2 data) (z strd))
+      (implies
+        (and (p &quot;init&quot; z 3) (p &quot;init&quot; &quot;a&quot; z a) (p &quot;init&quot; &quot;b&quot; z b)
+          (p &quot;init&quot; &quot;s&quot; z s) (p &quot;init&quot; &quot;d&quot; z d) (p &quot;init&quot; &quot;r1&quot; z r1)
+          (p &quot;init&quot; &quot;r2&quot; z r2) (non (privk a)) (non (privk b)) (ugen s)
+          (ugen r1))
+        (exists ((z-0 strd))
+          (and (p &quot;resp&quot; z-0 2) (p &quot;resp&quot; &quot;a&quot; z-0 a)
+            (p &quot;resp&quot; &quot;b&quot; z-0 b) (p &quot;resp&quot; &quot;s&quot; z-0 s)
+            (p &quot;resp&quot; &quot;d&quot; z-0 d) (p &quot;resp&quot; &quot;r1&quot; z-0 r1)
+            (p &quot;resp&quot; &quot;r2&quot; z-0 r2))))))
+  (traces
+    ((send
+       (cat (enc (enc s (privk a)) (pubk b))
+         (enc
+           (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s)
+           (privk a))))
+      (recv
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))))
+      (send
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))
+          (privk a)))))
+  (label 0)
+  (unrealized (0 1))
+  (origs)
+  (comment &quot;2 in cohort - 2 not yet seen&quot;))</pre>
+
+<p id="k5">Item <a href="#t0">5</a>, Parent: <a href="#k0">0</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='179.880pt' height='304.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 179.880 304.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='139.920' y1='114.960' x2='139.920' y2='189.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='264.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <path
+   d='M 139.920 189.960 Q 92.940 189.960 45.960 189.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(cat (enc d s) (enc (hash (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b)))</title>
+   <circle cx='139.920' cy='189.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc s (privk a)) (pubk b)) (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)))</title>
+   <circle style='fill: blue;' cx='139.920' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>(enc (enc (hash (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b)) (privk a))</title>
+   <circle cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc d s) (enc (hash (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='189.960' r='6.000'/></g>
+  <path
+   d='M 39.960 114.960 Q 86.940 114.960 133.920 114.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(cat (enc (enc s (privk a)) (pubk b)) (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)))</title>
+   <circle cx='39.960' cy='114.960' r='6.000'/></g>
+  <g><title>((r1 r1) (r2 r2) (s s) (d d) (a a) (b b))</title>
+   <text x='139.920' y='77.460' style='text-anchor: middle;'>resp</text>
+   </g>
+  <g><title>((r1 r1) (r2 r2) (s s) (d d) (a a) (b b))</title>
+   <text x='39.960' y='77.460' style='text-anchor: middle;'>init</text>
+   </g>
+  <text
+   x='89.940' y='39.960'
+   style='text-anchor: middle;'>blanchet-bound 5</text></svg></div>
+
+<pre>(defskeleton blanchet-bound
+  (vars (r1 r2 data) (s skey) (d text) (a b name))
+  (defstrand init 3 (r1 r1) (r2 r2) (s s) (d d) (a a) (b b))
+  (defstrand resp 2 (r1 r1) (r2 r2) (s s) (d d) (a a) (b b))
+  (precedes ((0 0) (1 0)) ((1 1) (0 1)))
+  (non-orig (privk a) (privk b))
+  (uniq-gen r1 s)
+  (operation encryption-test (displaced 2 1 resp 2)
+    (enc
+      (hash
+        (enc
+          (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s)
+          (privk a)) r2-0 &quot;bsp-2&quot; d) (privk b)) (0 1))
+  (traces
+    ((send
+       (cat (enc (enc s (privk a)) (pubk b))
+         (enc
+           (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s)
+           (privk a))))
+      (recv
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))))
+      (send
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))
+          (privk a))))
+    ((recv
+       (cat (enc (enc s (privk a)) (pubk b))
+         (enc
+           (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s)
+           (privk a))))
+      (send
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))))))
+  (label 5)
+  (parent 0)
+  (realized)
+  (shape)
+  (satisfies yes)
+  (maps ((0) ((a a) (b b) (s s) (d d) (r1 r1) (r2 r2))))
+  (origs))</pre>
+
+<p id="t7">Tree <a href="#top">7</a>, POV <a href="#k7">7</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='129.840pt' height='154.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 129.840 154.920' font-size='12.000'>
+  <text
+   x='89.880' y='101.040'
+   style='font-weight: bold; text-anchor: middle; fill: blue;'
+   onclick='window.open(&quot;#k12&quot;, &quot;_self&quot;)'>12</text>
+  <line
+   x1='39.960' y1='77.460' x2='89.880' y2='114.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <text
+   x='89.880' y='26.040'
+   style='font-weight: bold; text-anchor: middle; fill: blue;'
+   onclick='window.open(&quot;#k11&quot;, &quot;_self&quot;)'>11</text>
+  <line
+   x1='39.960' y1='77.460' x2='89.880' y2='39.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <text
+   x='39.960' y='63.540' style='text-anchor: middle; fill: black;'
+   onclick='window.open(&quot;#k7&quot;, &quot;_self&quot;)'>7</text>
+  </svg></div>
+
+<pre>(defprotocol blanchet-bound basic
+  (defrole init
+    (vars (a b name) (s skey) (d text) (r1 r2 data))
+    (trace
+      (send
+        (cat (enc (enc s (privk a)) (pubk b))
+          (enc
+            (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot;
+              s) (privk a))))
+      (recv
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))))
+      (send
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))
+          (privk a)))))
+  (defrole resp
+    (vars (a b name) (s skey) (d text) (r1 r2 data))
+    (trace
+      (recv
+        (cat (enc (enc s (privk a)) (pubk b))
+          (enc
+            (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot;
+              s) (privk a))))
+      (send
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))))
+      (recv
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))
+          (privk a)))))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (comment &quot;Blanchet&apos;s protocol&quot;))</pre>
+
+<p id="k7">Item <a href="#t7">7</a>, Children: <a href="#k11">11</a> <a href="#k12">12</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='304.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 304.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='264.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g>
+   <title>(enc (enc (hash (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b)) (privk a))</title>
+   <circle style='fill: red;' cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc d s) (enc (hash (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b)))</title>
+   <circle cx='39.960' cy='189.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc s (privk a)) (pubk b)) (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)))</title>
+   <circle style='fill: red;' cx='39.960' cy='114.960' r='6.000'/></g>
+  <g><title>((r1 r1) (r2 r2) (s s) (d d) (a a) (b b))</title>
+   <text x='39.960' y='77.460' style='text-anchor: middle;'>resp</text>
+   </g>
+  <text
+   x='39.960' y='39.960'
+   style='text-anchor: middle;'>blanchet-bound 7</text></svg></div>
+
+<pre>(defskeleton blanchet-bound
+  (vars (r1 r2 data) (s skey) (d text) (a b name))
+  (defstrand resp 3 (r1 r1) (r2 r2) (s s) (d d) (a a) (b b))
+  (non-orig (privk a) (privk b))
+  (uniq-gen r2 d)
+  (goals
+    (forall ((a b name) (s skey) (d text) (r1 r2 data) (z strd))
+      (implies
+        (and (p &quot;resp&quot; z 3) (p &quot;resp&quot; &quot;a&quot; z a) (p &quot;resp&quot; &quot;b&quot; z b)
+          (p &quot;resp&quot; &quot;s&quot; z s) (p &quot;resp&quot; &quot;d&quot; z d) (p &quot;resp&quot; &quot;r1&quot; z r1)
+          (p &quot;resp&quot; &quot;r2&quot; z r2) (non (privk a)) (non (privk b)) (ugen d)
+          (ugen r2))
+        (exists ((z-0 strd))
+          (and (p &quot;init&quot; z-0 3) (p &quot;init&quot; &quot;a&quot; z-0 a)
+            (p &quot;init&quot; &quot;b&quot; z-0 b) (p &quot;init&quot; &quot;s&quot; z-0 s)
+            (p &quot;init&quot; &quot;d&quot; z-0 d) (p &quot;init&quot; &quot;r1&quot; z-0 r1)
+            (p &quot;init&quot; &quot;r2&quot; z-0 r2))))))
+  (traces
+    ((recv
+       (cat (enc (enc s (privk a)) (pubk b))
+         (enc
+           (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s)
+           (privk a))))
+      (send
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))))
+      (recv
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))
+          (privk a)))))
+  (label 7)
+  (unrealized (0 0) (0 2))
+  (origs)
+  (comment &quot;1 in cohort - 1 not yet seen&quot;))</pre>
+
+<p id="k11">Item <a href="#t7">11</a>, Parent: <a href="#k7">7</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='179.880pt' height='304.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 179.880 304.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='139.920' y1='114.960' x2='139.920' y2='264.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='264.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <path
+   d='M 139.920 264.960 Q 92.940 264.960 45.960 264.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc (enc (hash (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b)) (privk a))</title>
+   <circle cx='139.920' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc d s) (enc (hash (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b)))</title>
+   <circle style='fill: blue;' cx='139.920' cy='189.960' r='6.000'/></g>
+  <path
+   d='M 139.920 114.960 Q 92.940 114.960 45.960 114.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(cat (enc (enc s (privk a)) (pubk b)) (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)))</title>
+   <circle cx='139.920' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>(enc (enc (hash (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b)) (privk a))</title>
+   <circle style='fill: blue;' cx='39.960' cy='264.960' r='6.000'/></g>
+  <path
+   d='M 39.960 189.960 Q 86.940 189.960 133.920 189.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(cat (enc d s) (enc (hash (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b)))</title>
+   <circle cx='39.960' cy='189.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc s (privk a)) (pubk b)) (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='114.960' r='6.000'/></g>
+  <g><title>((r1 r1) (r2 r2) (s s) (d d) (a a) (b b))</title>
+   <text x='139.920' y='77.460' style='text-anchor: middle;'>init</text>
+   </g>
+  <g><title>((r1 r1) (r2 r2) (s s) (d d) (a a) (b b))</title>
+   <text x='39.960' y='77.460' style='text-anchor: middle;'>resp</text>
+   </g>
+  <text
+   x='89.940' y='39.960'
+   style='text-anchor: middle;'>blanchet-bound 11</text></svg></div>
+
+<pre>(defskeleton blanchet-bound
+  (vars (r2 r1 data) (s skey) (d text) (a b name))
+  (defstrand resp 3 (r1 r1) (r2 r2) (s s) (d d) (a a) (b b))
+  (defstrand init 3 (r1 r1) (r2 r2) (s s) (d d) (a a) (b b))
+  (precedes ((0 1) (1 1)) ((1 0) (0 0)) ((1 2) (0 2)))
+  (non-orig (privk a) (privk b))
+  (uniq-gen r2 d)
+  (operation encryption-test (displaced 1 2 init 3)
+    (enc
+      (enc
+        (hash
+          (enc
+            (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot;
+              s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b)) (privk a)) (0 2))
+  (traces
+    ((recv
+       (cat (enc (enc s (privk a)) (pubk b))
+         (enc
+           (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s)
+           (privk a))))
+      (send
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))))
+      (recv
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))
+          (privk a))))
+    ((send
+       (cat (enc (enc s (privk a)) (pubk b))
+         (enc
+           (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s)
+           (privk a))))
+      (recv
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))))
+      (send
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))
+          (privk a)))))
+  (label 11)
+  (parent 7)
+  (realized)
+  (shape)
+  (satisfies yes)
+  (maps ((0) ((a a) (b b) (s s) (d d) (r1 r1) (r2 r2))))
+  (origs))</pre>
+
+<p id="k12">Item <a href="#t7">12</a>, Parent: <a href="#k7">7</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='279.840pt' height='304.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 279.840 304.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='239.880' y1='114.960' x2='239.880' y2='264.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <line
+   x1='139.920' y1='114.960' x2='139.920' y2='114.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='264.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <path
+   d='M 239.880 264.960 Q 142.920 227.460 45.960 264.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc (enc (hash (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b)) (privk a))</title>
+   <circle cx='239.880' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc d s) (enc (hash (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b)))</title>
+   <circle style='fill: blue;' cx='239.880' cy='189.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc s (privk a)) (pubk b)) (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)))</title>
+   <circle cx='239.880' cy='114.960' r='6.000'/></g>
+  <path
+   d='M 139.920 114.960 Q 92.940 114.960 45.960 114.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(cat (enc (enc s (privk a)) (pubk b)) (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)))</title>
+   <circle cx='139.920' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>(enc (enc (hash (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b)) (privk a))</title>
+   <circle style='fill: blue;' cx='39.960' cy='264.960' r='6.000'/></g>
+  <path
+   d='M 39.960 189.960 Q 136.920 152.460 233.880 189.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(cat (enc d s) (enc (hash (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b)))</title>
+   <circle cx='39.960' cy='189.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc s (privk a)) (pubk b)) (enc (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s) (privk a)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='114.960' r='6.000'/></g>
+  <g><title>((r1 r1) (r2 r2) (s s) (d d) (a a) (b b))</title>
+   <text x='239.880' y='77.460' style='text-anchor: middle;'>init</text>
+   </g>
+  <g><title>((r1 r1) (s s) (a a) (b b))</title>
+   <text x='139.920' y='77.460' style='text-anchor: middle;'>init</text>
+   </g>
+  <g><title>((r1 r1) (r2 r2) (s s) (d d) (a a) (b b))</title>
+   <text x='39.960' y='77.460' style='text-anchor: middle;'>resp</text>
+   </g>
+  <text
+   x='139.920' y='39.960'
+   style='text-anchor: middle;'>blanchet-bound 12</text></svg></div>
+
+<pre>(defskeleton blanchet-bound
+  (vars (r2 r1 data) (s skey) (d text) (a b name))
+  (defstrand resp 3 (r1 r1) (r2 r2) (s s) (d d) (a a) (b b))
+  (defstrand init 1 (r1 r1) (s s) (a a) (b b))
+  (defstrand init 3 (r1 r1) (r2 r2) (s s) (d d) (a a) (b b))
+  (precedes ((0 1) (2 1)) ((1 0) (0 0)) ((2 2) (0 2)))
+  (non-orig (privk a) (privk b))
+  (uniq-gen r2 d)
+  (operation encryption-test (added-strand init 3)
+    (enc
+      (enc
+        (hash
+          (enc
+            (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot;
+              s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b)) (privk a)) (0 2))
+  (traces
+    ((recv
+       (cat (enc (enc s (privk a)) (pubk b))
+         (enc
+           (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s)
+           (privk a))))
+      (send
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))))
+      (recv
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))
+          (privk a))))
+    ((send
+       (cat (enc (enc s (privk a)) (pubk b))
+         (enc
+           (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s)
+           (privk a)))))
+    ((send
+       (cat (enc (enc s (privk a)) (pubk b))
+         (enc
+           (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1 &quot;bsp-1&quot; s)
+           (privk a))))
+      (recv
+        (cat (enc d s)
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))))
+      (send
+        (enc
+          (enc
+            (hash
+              (enc
+                (hash (enc (hash &quot;bsp&quot; &quot;flawed&quot; a b) (privk a)) r1
+                  &quot;bsp-1&quot; s) (privk a)) r2 &quot;bsp-2&quot; d) (privk b))
+          (privk a)))))
+  (label 12)
+  (parent 7)
+  (realized)
+  (shape)
+  (satisfies yes)
+  (maps ((0) ((a a) (b b) (s s) (d d) (r1 r1) (r2 r2))))
+  (origs))</pre>
+
+</body>
+</html>

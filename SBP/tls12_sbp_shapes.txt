@@ -1,0 +1,2712 @@
+(comment "CPSA 4.4.2")
+(comment "Extracted shapes")
+
+(herald
+  "Session Binding Protocol with TLS 1.2 (uses the modified server as implemented and tested in the paper and the cookie authentication model (ca.scm) which showed the cookie stealing attack)."
+  (bound 12))
+
+(comment "CPSA 4.4.2")
+
+(comment "All input read from tls12_sbp.scm")
+
+(comment "Strand count bounded at 12")
+
+(defprotocol ca basic
+  (defrole clienta
+    (vars (u s ca name) (cr sr random32) (pms random48) (p password)
+      (cookie any mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "login-successful" cookie
+          (hash (hash pms cr sr) "server_write"))) (load cookiestor any)
+      (stor cookiestor (cat "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write")))))
+  (defrole clientr
+    (vars (u s ca name) (cr sr random32) (pms random48) (cookie mesg)
+      (cookiestor locn) (request httpreq) (response httpdata))
+    (trace (send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (load cookiestor (cat "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write"))))
+    (gen-st (cat "client store" u s cookie)))
+  (defrole servera
+    (vars (u s ca name) (cr sr random32) (pms random48) (p password)
+      (cookie data) (ppk skey) (any mesg) (authstor locn)
+      (request httpreq) (response httpdata))
+    (trace (recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "login-successful" (enc cookie (hash ppk (hash pms cr sr)))
+          (hash (hash pms cr sr) "server_write"))) (load authstor any)
+      (stor authstor (cat "server store" s u cookie))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (send (enc response (hash (hash pms cr sr) "server_write"))))
+    (non-orig ppk)
+    (uniq-orig cookie)
+    (facts (neq u s)))
+  (defrole serverr
+    (vars (u s ca name) (cr sr random32) (pms random48) (cookie data)
+      (ppk skey) (authstor locn) (request httpreq) (response httpdata))
+    (trace (recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (load authstor (cat "server store" s u cookie))
+      (send (enc response (hash (hash pms cr sr) "server_write"))))
+    (non-orig ppk)
+    (facts (neq u s))
+    (gen-st (cat "server store" s u cookie)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (defgenrule scissorsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (leads-to z0 i0 z2 i2))
+        (and (= z1 z2) (= i1 i2)))))
+  (defgenrule cakeRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (leads-to z0 i0 z1 i1)
+          (leads-to z0 i0 z2 i2) (prec z1 i1 z2 i2)) (false))))
+  (defgenrule no-interruption
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (leads-to z0 i0 z2 i2) (trans z1 i1)
+          (same-locn z0 i0 z1 i1) (prec z0 i0 z1 i1) (prec z1 i1 z2 i2))
+        (false))))
+  (defgenrule shearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (same-locn z0 i0 z2 i2)
+          (prec z0 i0 z2 i2))
+        (or (and (= z1 z2) (= i1 i2)) (prec z1 i1 z2 i2)))))
+  (defgenrule invShearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (same-locn z0 i0 z1 i1)
+          (leads-to z1 i1 z2 i2) (prec z0 i0 z2 i2))
+        (or (and (= z0 z1) (= i0 i1)) (prec z0 i0 z1 i1)))))
+  (defgenrule fact-servera-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p "servera" z (idx 5)) (p "servera" "s" z s)
+          (p "servera" "u" z u)) (fact neq u s))))
+  (defgenrule fact-serverr-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p "serverr" z (idx 6)) (p "serverr" "s" z s)
+          (p "serverr" "u" z u)) (fact neq u s))))
+  (defgenrule trRl_clienta-at-7
+    (forall ((z strd))
+      (implies (p "clienta" z (idx 8)) (trans z (idx 7)))))
+  (defgenrule trRl_clienta-at-6
+    (forall ((z strd))
+      (implies (p "clienta" z (idx 8)) (trans z (idx 6)))))
+  (defgenrule trRl_servera-at-7
+    (forall ((z strd))
+      (implies (p "servera" z (idx 8)) (trans z (idx 7)))))
+  (defgenrule trRl_servera-at-6
+    (forall ((z strd))
+      (implies (p "servera" z (idx 8)) (trans z (idx 6)))))
+  (defgenrule gen-st-clientr-0
+    (forall ((z strd) (cookie mesg) (s u name))
+      (implies
+        (and (p "clientr" z (idx 5)) (p "clientr" "cookie" z cookie)
+          (p "clientr" "s" z s) (p "clientr" "u" z u))
+        (gen-st (cat "client store" u s cookie)))))
+  (defgenrule gen-st-serverr-0
+    (forall ((z strd) (cookie data) (u s name))
+      (implies
+        (and (p "serverr" z (idx 6)) (p "serverr" "cookie" z cookie)
+          (p "serverr" "u" z u) (p "serverr" "s" z s))
+        (gen-st (cat "server store" s u cookie)))))
+  (lang (random32 atom) (random48 atom) (password atom) (httpreq atom)
+    (httpdata atom)))
+
+(defskeleton ca
+  (vars (cookie any mesg) (response httpdata) (request httpreq)
+    (p password) (cr sr random32) (pms random48) (u s ca name)
+    (pt pt-0 pval) (cookiestor locn))
+  (defstrand clienta 10 (cookie cookie) (any any) (response response)
+    (request request) (p p) (cr cr) (sr sr) (pms pms) (u u) (s s)
+    (ca ca) (cookiestor cookiestor))
+  (non-orig (privk s) (privk ca))
+  (pen-non-orig p)
+  (uniq-orig cr sr pms)
+  (traces
+    ((send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "login-successful" cookie
+          (hash (hash pms cr sr) "server_write")))
+      (load cookiestor (cat pt any))
+      (stor cookiestor (cat pt-0 "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write")))))
+  (label 0)
+  (unrealized (0 1) (0 3) (0 5) (0 9))
+  (origs (pt-0 (0 7)) (cr (0 0)) (pms (0 2)))
+  (comment "Not closed under rules"))
+
+(defskeleton ca
+  (vars (any any-0 mesg) (cookie data) (response httpdata)
+    (request httpreq) (p password) (cr sr random32) (pms random48)
+    (ppk skey) (u s ca name) (pt pt-0 pt-1 pt-2 pval)
+    (cookiestor authstor locn))
+  (defstrand clienta 10
+    (cookie (enc cookie (hash ppk (hash pms cr sr)))) (any any)
+    (response response) (request request) (p p) (cr cr) (sr sr)
+    (pms pms) (u u) (s s) (ca ca) (cookiestor cookiestor))
+  (defstrand servera 10 (any any-0) (cookie cookie) (response response)
+    (request request) (p p) (cr cr) (sr sr) (pms pms) (ppk ppk) (u u)
+    (s s) (ca ca) (authstor authstor))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((0 4) (1 4)) ((0 8) (1 8))
+    ((1 1) (0 1)) ((1 3) (0 3)) ((1 5) (0 5)) ((1 9) (0 9)))
+  (non-orig ppk (privk s) (privk ca))
+  (pen-non-orig p)
+  (uniq-orig cookie cr sr pms)
+  (facts (neq u s))
+  (rule fact-servera-neq0 trRl_clienta-at-6 trRl_clienta-at-7
+    trRl_servera-at-6 trRl_servera-at-7)
+  (operation encryption-test (displaced 2 0 clienta 9)
+    (enc (enc cookie (hash ppk (hash pms cr sr))) request-0
+      (hash (hash pms cr sr) "client_write")) (1 8))
+  (traces
+    ((send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "login-successful" (enc cookie (hash ppk (hash pms cr sr)))
+          (hash (hash pms cr sr) "server_write")))
+      (load cookiestor (cat pt any))
+      (stor cookiestor
+        (cat pt-0 "client store" u s
+          (enc cookie (hash ppk (hash pms cr sr)))))
+      (send
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write"))))
+    ((recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "login-successful" (enc cookie (hash ppk (hash pms cr sr)))
+          (hash (hash pms cr sr) "server_write")))
+      (load authstor (cat pt-1 any-0))
+      (stor authstor (cat pt-2 "server store" s u cookie))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (send (enc response (hash (hash pms cr sr) "server_write")))))
+  (label 26)
+  (parent 0)
+  (realized)
+  (shape)
+  (maps
+    ((0)
+      ((u u) (s s) (ca ca) (p p) (cr cr) (sr sr) (pms pms)
+        (cookie (enc cookie (hash ppk (hash pms cr sr)))) (any any)
+        (cookiestor cookiestor) (request request) (response response))))
+  (origs (pt-0 (0 7)) (cookie (1 5)) (pt-2 (1 7)) (cr (0 0)) (pms (0 2))
+    (sr (1 1))))
+
+(comment "Nothing left to do")
+
+(defprotocol ca basic
+  (defrole clienta
+    (vars (u s ca name) (cr sr random32) (pms random48) (p password)
+      (cookie any mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "login-successful" cookie
+          (hash (hash pms cr sr) "server_write"))) (load cookiestor any)
+      (stor cookiestor (cat "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write")))))
+  (defrole clientr
+    (vars (u s ca name) (cr sr random32) (pms random48) (cookie mesg)
+      (cookiestor locn) (request httpreq) (response httpdata))
+    (trace (send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (load cookiestor (cat "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write"))))
+    (gen-st (cat "client store" u s cookie)))
+  (defrole servera
+    (vars (u s ca name) (cr sr random32) (pms random48) (p password)
+      (cookie data) (ppk skey) (any mesg) (authstor locn)
+      (request httpreq) (response httpdata))
+    (trace (recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "login-successful" (enc cookie (hash ppk (hash pms cr sr)))
+          (hash (hash pms cr sr) "server_write"))) (load authstor any)
+      (stor authstor (cat "server store" s u cookie))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (send (enc response (hash (hash pms cr sr) "server_write"))))
+    (non-orig ppk)
+    (uniq-orig cookie)
+    (facts (neq u s)))
+  (defrole serverr
+    (vars (u s ca name) (cr sr random32) (pms random48) (cookie data)
+      (ppk skey) (authstor locn) (request httpreq) (response httpdata))
+    (trace (recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (load authstor (cat "server store" s u cookie))
+      (send (enc response (hash (hash pms cr sr) "server_write"))))
+    (non-orig ppk)
+    (facts (neq u s))
+    (gen-st (cat "server store" s u cookie)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (defgenrule scissorsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (leads-to z0 i0 z2 i2))
+        (and (= z1 z2) (= i1 i2)))))
+  (defgenrule cakeRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (leads-to z0 i0 z1 i1)
+          (leads-to z0 i0 z2 i2) (prec z1 i1 z2 i2)) (false))))
+  (defgenrule no-interruption
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (leads-to z0 i0 z2 i2) (trans z1 i1)
+          (same-locn z0 i0 z1 i1) (prec z0 i0 z1 i1) (prec z1 i1 z2 i2))
+        (false))))
+  (defgenrule shearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (same-locn z0 i0 z2 i2)
+          (prec z0 i0 z2 i2))
+        (or (and (= z1 z2) (= i1 i2)) (prec z1 i1 z2 i2)))))
+  (defgenrule invShearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (same-locn z0 i0 z1 i1)
+          (leads-to z1 i1 z2 i2) (prec z0 i0 z2 i2))
+        (or (and (= z0 z1) (= i0 i1)) (prec z0 i0 z1 i1)))))
+  (defgenrule fact-servera-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p "servera" z (idx 5)) (p "servera" "s" z s)
+          (p "servera" "u" z u)) (fact neq u s))))
+  (defgenrule fact-serverr-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p "serverr" z (idx 6)) (p "serverr" "s" z s)
+          (p "serverr" "u" z u)) (fact neq u s))))
+  (defgenrule trRl_clienta-at-7
+    (forall ((z strd))
+      (implies (p "clienta" z (idx 8)) (trans z (idx 7)))))
+  (defgenrule trRl_clienta-at-6
+    (forall ((z strd))
+      (implies (p "clienta" z (idx 8)) (trans z (idx 6)))))
+  (defgenrule trRl_servera-at-7
+    (forall ((z strd))
+      (implies (p "servera" z (idx 8)) (trans z (idx 7)))))
+  (defgenrule trRl_servera-at-6
+    (forall ((z strd))
+      (implies (p "servera" z (idx 8)) (trans z (idx 6)))))
+  (defgenrule gen-st-clientr-0
+    (forall ((z strd) (cookie mesg) (s u name))
+      (implies
+        (and (p "clientr" z (idx 5)) (p "clientr" "cookie" z cookie)
+          (p "clientr" "s" z s) (p "clientr" "u" z u))
+        (gen-st (cat "client store" u s cookie)))))
+  (defgenrule gen-st-serverr-0
+    (forall ((z strd) (cookie data) (u s name))
+      (implies
+        (and (p "serverr" z (idx 6)) (p "serverr" "cookie" z cookie)
+          (p "serverr" "u" z u) (p "serverr" "s" z s))
+        (gen-st (cat "server store" s u cookie)))))
+  (lang (random32 atom) (random48 atom) (password atom) (httpreq atom)
+    (httpdata atom)))
+
+(defskeleton ca
+  (vars (any mesg) (cookie data) (response httpdata) (request httpreq)
+    (p password) (cr sr random32) (pms random48) (u s ca name)
+    (pt pt-0 pval) (cookiestor locn))
+  (defstrand clienta 10 (cookie cookie) (any any) (response response)
+    (request request) (p p) (cr cr) (sr sr) (pms pms) (u u) (s s)
+    (ca ca) (cookiestor cookiestor))
+  (deflistener cookie)
+  (non-orig (privk s) (privk ca))
+  (pen-non-orig p)
+  (uniq-orig cr sr pms)
+  (traces
+    ((send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "login-successful" cookie
+          (hash (hash pms cr sr) "server_write")))
+      (load cookiestor (cat pt any))
+      (stor cookiestor (cat pt-0 "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write"))))
+    ((recv cookie) (send cookie)))
+  (label 40)
+  (unrealized (0 1) (0 3) (0 5) (0 9))
+  (origs (pt-0 (0 7)) (cr (0 0)) (pms (0 2)))
+  (comment "Not closed under rules"))
+
+(comment "Nothing left to do")
+
+(defprotocol ca basic
+  (defrole clienta
+    (vars (u s ca name) (cr sr random32) (pms random48) (p password)
+      (cookie any mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "login-successful" cookie
+          (hash (hash pms cr sr) "server_write"))) (load cookiestor any)
+      (stor cookiestor (cat "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write")))))
+  (defrole clientr
+    (vars (u s ca name) (cr sr random32) (pms random48) (cookie mesg)
+      (cookiestor locn) (request httpreq) (response httpdata))
+    (trace (send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (load cookiestor (cat "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write"))))
+    (gen-st (cat "client store" u s cookie)))
+  (defrole servera
+    (vars (u s ca name) (cr sr random32) (pms random48) (p password)
+      (cookie data) (ppk skey) (any mesg) (authstor locn)
+      (request httpreq) (response httpdata))
+    (trace (recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "login-successful" (enc cookie (hash ppk (hash pms cr sr)))
+          (hash (hash pms cr sr) "server_write"))) (load authstor any)
+      (stor authstor (cat "server store" s u cookie))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (send (enc response (hash (hash pms cr sr) "server_write"))))
+    (non-orig ppk)
+    (uniq-orig cookie)
+    (facts (neq u s)))
+  (defrole serverr
+    (vars (u s ca name) (cr sr random32) (pms random48) (cookie data)
+      (ppk skey) (authstor locn) (request httpreq) (response httpdata))
+    (trace (recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (load authstor (cat "server store" s u cookie))
+      (send (enc response (hash (hash pms cr sr) "server_write"))))
+    (non-orig ppk)
+    (facts (neq u s))
+    (gen-st (cat "server store" s u cookie)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (defgenrule scissorsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (leads-to z0 i0 z2 i2))
+        (and (= z1 z2) (= i1 i2)))))
+  (defgenrule cakeRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (leads-to z0 i0 z1 i1)
+          (leads-to z0 i0 z2 i2) (prec z1 i1 z2 i2)) (false))))
+  (defgenrule no-interruption
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (leads-to z0 i0 z2 i2) (trans z1 i1)
+          (same-locn z0 i0 z1 i1) (prec z0 i0 z1 i1) (prec z1 i1 z2 i2))
+        (false))))
+  (defgenrule shearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (same-locn z0 i0 z2 i2)
+          (prec z0 i0 z2 i2))
+        (or (and (= z1 z2) (= i1 i2)) (prec z1 i1 z2 i2)))))
+  (defgenrule invShearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (same-locn z0 i0 z1 i1)
+          (leads-to z1 i1 z2 i2) (prec z0 i0 z2 i2))
+        (or (and (= z0 z1) (= i0 i1)) (prec z0 i0 z1 i1)))))
+  (defgenrule fact-servera-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p "servera" z (idx 5)) (p "servera" "s" z s)
+          (p "servera" "u" z u)) (fact neq u s))))
+  (defgenrule fact-serverr-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p "serverr" z (idx 6)) (p "serverr" "s" z s)
+          (p "serverr" "u" z u)) (fact neq u s))))
+  (defgenrule trRl_clienta-at-7
+    (forall ((z strd))
+      (implies (p "clienta" z (idx 8)) (trans z (idx 7)))))
+  (defgenrule trRl_clienta-at-6
+    (forall ((z strd))
+      (implies (p "clienta" z (idx 8)) (trans z (idx 6)))))
+  (defgenrule trRl_servera-at-7
+    (forall ((z strd))
+      (implies (p "servera" z (idx 8)) (trans z (idx 7)))))
+  (defgenrule trRl_servera-at-6
+    (forall ((z strd))
+      (implies (p "servera" z (idx 8)) (trans z (idx 6)))))
+  (defgenrule gen-st-clientr-0
+    (forall ((z strd) (cookie mesg) (s u name))
+      (implies
+        (and (p "clientr" z (idx 5)) (p "clientr" "cookie" z cookie)
+          (p "clientr" "s" z s) (p "clientr" "u" z u))
+        (gen-st (cat "client store" u s cookie)))))
+  (defgenrule gen-st-serverr-0
+    (forall ((z strd) (cookie data) (u s name))
+      (implies
+        (and (p "serverr" z (idx 6)) (p "serverr" "cookie" z cookie)
+          (p "serverr" "u" z u) (p "serverr" "s" z s))
+        (gen-st (cat "server store" s u cookie)))))
+  (lang (random32 atom) (random48 atom) (password atom) (httpreq atom)
+    (httpdata atom)))
+
+(defskeleton ca
+  (vars (cookie mesg) (response httpdata) (request httpreq)
+    (cr sr random32) (pms random48) (s ca u name) (pt pval)
+    (cookiestor locn))
+  (defstrand clientr 7 (cookie cookie) (response response)
+    (request request) (cr cr) (sr sr) (pms pms) (u u) (s s) (ca ca)
+    (cookiestor cookiestor))
+  (non-orig (privk s) (privk ca))
+  (uniq-orig cr sr pms)
+  (traces
+    ((send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (load cookiestor (cat pt "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write")))))
+  (label 54)
+  (unrealized (0 1) (0 3) (0 6))
+  (origs (cr (0 0)) (pms (0 2)))
+  (comment "Not closed under rules"))
+
+(comment "Nothing left to do")
+
+(defprotocol ca basic
+  (defrole clienta
+    (vars (u s ca name) (cr sr random32) (pms random48) (p password)
+      (cookie any mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "login-successful" cookie
+          (hash (hash pms cr sr) "server_write"))) (load cookiestor any)
+      (stor cookiestor (cat "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write")))))
+  (defrole clientr
+    (vars (u s ca name) (cr sr random32) (pms random48) (cookie mesg)
+      (cookiestor locn) (request httpreq) (response httpdata))
+    (trace (send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (load cookiestor (cat "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write"))))
+    (gen-st (cat "client store" u s cookie)))
+  (defrole servera
+    (vars (u s ca name) (cr sr random32) (pms random48) (p password)
+      (cookie data) (ppk skey) (any mesg) (authstor locn)
+      (request httpreq) (response httpdata))
+    (trace (recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "login-successful" (enc cookie (hash ppk (hash pms cr sr)))
+          (hash (hash pms cr sr) "server_write"))) (load authstor any)
+      (stor authstor (cat "server store" s u cookie))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (send (enc response (hash (hash pms cr sr) "server_write"))))
+    (non-orig ppk)
+    (uniq-orig cookie)
+    (facts (neq u s)))
+  (defrole serverr
+    (vars (u s ca name) (cr sr random32) (pms random48) (cookie data)
+      (ppk skey) (authstor locn) (request httpreq) (response httpdata))
+    (trace (recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (load authstor (cat "server store" s u cookie))
+      (send (enc response (hash (hash pms cr sr) "server_write"))))
+    (non-orig ppk)
+    (facts (neq u s))
+    (gen-st (cat "server store" s u cookie)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (defgenrule scissorsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (leads-to z0 i0 z2 i2))
+        (and (= z1 z2) (= i1 i2)))))
+  (defgenrule cakeRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (leads-to z0 i0 z1 i1)
+          (leads-to z0 i0 z2 i2) (prec z1 i1 z2 i2)) (false))))
+  (defgenrule no-interruption
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (leads-to z0 i0 z2 i2) (trans z1 i1)
+          (same-locn z0 i0 z1 i1) (prec z0 i0 z1 i1) (prec z1 i1 z2 i2))
+        (false))))
+  (defgenrule shearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (same-locn z0 i0 z2 i2)
+          (prec z0 i0 z2 i2))
+        (or (and (= z1 z2) (= i1 i2)) (prec z1 i1 z2 i2)))))
+  (defgenrule invShearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (same-locn z0 i0 z1 i1)
+          (leads-to z1 i1 z2 i2) (prec z0 i0 z2 i2))
+        (or (and (= z0 z1) (= i0 i1)) (prec z0 i0 z1 i1)))))
+  (defgenrule fact-servera-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p "servera" z (idx 5)) (p "servera" "s" z s)
+          (p "servera" "u" z u)) (fact neq u s))))
+  (defgenrule fact-serverr-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p "serverr" z (idx 6)) (p "serverr" "s" z s)
+          (p "serverr" "u" z u)) (fact neq u s))))
+  (defgenrule trRl_clienta-at-7
+    (forall ((z strd))
+      (implies (p "clienta" z (idx 8)) (trans z (idx 7)))))
+  (defgenrule trRl_clienta-at-6
+    (forall ((z strd))
+      (implies (p "clienta" z (idx 8)) (trans z (idx 6)))))
+  (defgenrule trRl_servera-at-7
+    (forall ((z strd))
+      (implies (p "servera" z (idx 8)) (trans z (idx 7)))))
+  (defgenrule trRl_servera-at-6
+    (forall ((z strd))
+      (implies (p "servera" z (idx 8)) (trans z (idx 6)))))
+  (defgenrule gen-st-clientr-0
+    (forall ((z strd) (cookie mesg) (s u name))
+      (implies
+        (and (p "clientr" z (idx 5)) (p "clientr" "cookie" z cookie)
+          (p "clientr" "s" z s) (p "clientr" "u" z u))
+        (gen-st (cat "client store" u s cookie)))))
+  (defgenrule gen-st-serverr-0
+    (forall ((z strd) (cookie data) (u s name))
+      (implies
+        (and (p "serverr" z (idx 6)) (p "serverr" "cookie" z cookie)
+          (p "serverr" "u" z u) (p "serverr" "s" z s))
+        (gen-st (cat "server store" s u cookie)))))
+  (lang (random32 atom) (random48 atom) (password atom) (httpreq atom)
+    (httpdata atom)))
+
+(defskeleton ca
+  (vars (any mesg) (cookie data) (request httpreq) (p password)
+    (cr sr random32) (pms random48) (ppk skey) (s ca u name)
+    (pt pt-0 pval) (authstor locn))
+  (defstrand servera 9 (any any) (cookie cookie) (request request) (p p)
+    (cr cr) (sr sr) (pms pms) (ppk ppk) (u u) (s s) (ca ca)
+    (authstor authstor))
+  (non-orig ppk (privk s) (privk ca))
+  (uniq-orig cookie sr)
+  (traces
+    ((recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "login-successful" (enc cookie (hash ppk (hash pms cr sr)))
+          (hash (hash pms cr sr) "server_write")))
+      (load authstor (cat pt any))
+      (stor authstor (cat pt-0 "server store" s u cookie))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))))
+  (label 94)
+  (realized)
+  (origs (pt-0 (0 7)) (cookie (0 5)) (sr (0 1)))
+  (comment "Not closed under rules"))
+
+(defskeleton ca
+  (vars (any mesg) (cookie data) (request httpreq) (p password)
+    (cr sr random32) (pms random48) (ppk skey) (s ca u name)
+    (pt pt-0 pval) (authstor locn))
+  (defstrand servera 9 (any any) (cookie cookie) (request request) (p p)
+    (cr cr) (sr sr) (pms pms) (ppk ppk) (u u) (s s) (ca ca)
+    (authstor authstor))
+  (non-orig ppk (privk s) (privk ca))
+  (uniq-orig cookie sr)
+  (facts (neq u s))
+  (rule fact-servera-neq0 trRl_servera-at-6 trRl_servera-at-7)
+  (traces
+    ((recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "login-successful" (enc cookie (hash ppk (hash pms cr sr)))
+          (hash (hash pms cr sr) "server_write")))
+      (load authstor (cat pt any))
+      (stor authstor (cat pt-0 "server store" s u cookie))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))))
+  (label 95)
+  (parent 94)
+  (realized)
+  (shape)
+  (maps
+    ((0)
+      ((s s) (ca ca) (cr cr) (sr sr) (pms pms) (u u) (p p)
+        (cookie cookie) (ppk ppk) (any any) (authstor authstor)
+        (request request))))
+  (origs (pt-0 (0 7)) (cookie (0 5)) (sr (0 1))))
+
+(comment "Nothing left to do")
+
+(defprotocol ca basic
+  (defrole clienta
+    (vars (u s ca name) (cr sr random32) (pms random48) (p password)
+      (cookie any mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "login-successful" cookie
+          (hash (hash pms cr sr) "server_write"))) (load cookiestor any)
+      (stor cookiestor (cat "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write")))))
+  (defrole clientr
+    (vars (u s ca name) (cr sr random32) (pms random48) (cookie mesg)
+      (cookiestor locn) (request httpreq) (response httpdata))
+    (trace (send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (load cookiestor (cat "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write"))))
+    (gen-st (cat "client store" u s cookie)))
+  (defrole servera
+    (vars (u s ca name) (cr sr random32) (pms random48) (p password)
+      (cookie data) (ppk skey) (any mesg) (authstor locn)
+      (request httpreq) (response httpdata))
+    (trace (recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "login-successful" (enc cookie (hash ppk (hash pms cr sr)))
+          (hash (hash pms cr sr) "server_write"))) (load authstor any)
+      (stor authstor (cat "server store" s u cookie))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (send (enc response (hash (hash pms cr sr) "server_write"))))
+    (non-orig ppk)
+    (uniq-orig cookie)
+    (facts (neq u s)))
+  (defrole serverr
+    (vars (u s ca name) (cr sr random32) (pms random48) (cookie data)
+      (ppk skey) (authstor locn) (request httpreq) (response httpdata))
+    (trace (recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (load authstor (cat "server store" s u cookie))
+      (send (enc response (hash (hash pms cr sr) "server_write"))))
+    (non-orig ppk)
+    (facts (neq u s))
+    (gen-st (cat "server store" s u cookie)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (defgenrule scissorsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (leads-to z0 i0 z2 i2))
+        (and (= z1 z2) (= i1 i2)))))
+  (defgenrule cakeRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (leads-to z0 i0 z1 i1)
+          (leads-to z0 i0 z2 i2) (prec z1 i1 z2 i2)) (false))))
+  (defgenrule no-interruption
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (leads-to z0 i0 z2 i2) (trans z1 i1)
+          (same-locn z0 i0 z1 i1) (prec z0 i0 z1 i1) (prec z1 i1 z2 i2))
+        (false))))
+  (defgenrule shearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (same-locn z0 i0 z2 i2)
+          (prec z0 i0 z2 i2))
+        (or (and (= z1 z2) (= i1 i2)) (prec z1 i1 z2 i2)))))
+  (defgenrule invShearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (same-locn z0 i0 z1 i1)
+          (leads-to z1 i1 z2 i2) (prec z0 i0 z2 i2))
+        (or (and (= z0 z1) (= i0 i1)) (prec z0 i0 z1 i1)))))
+  (defgenrule fact-servera-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p "servera" z (idx 5)) (p "servera" "s" z s)
+          (p "servera" "u" z u)) (fact neq u s))))
+  (defgenrule fact-serverr-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p "serverr" z (idx 6)) (p "serverr" "s" z s)
+          (p "serverr" "u" z u)) (fact neq u s))))
+  (defgenrule trRl_clienta-at-7
+    (forall ((z strd))
+      (implies (p "clienta" z (idx 8)) (trans z (idx 7)))))
+  (defgenrule trRl_clienta-at-6
+    (forall ((z strd))
+      (implies (p "clienta" z (idx 8)) (trans z (idx 6)))))
+  (defgenrule trRl_servera-at-7
+    (forall ((z strd))
+      (implies (p "servera" z (idx 8)) (trans z (idx 7)))))
+  (defgenrule trRl_servera-at-6
+    (forall ((z strd))
+      (implies (p "servera" z (idx 8)) (trans z (idx 6)))))
+  (defgenrule gen-st-clientr-0
+    (forall ((z strd) (cookie mesg) (s u name))
+      (implies
+        (and (p "clientr" z (idx 5)) (p "clientr" "cookie" z cookie)
+          (p "clientr" "s" z s) (p "clientr" "u" z u))
+        (gen-st (cat "client store" u s cookie)))))
+  (defgenrule gen-st-serverr-0
+    (forall ((z strd) (cookie data) (u s name))
+      (implies
+        (and (p "serverr" z (idx 6)) (p "serverr" "cookie" z cookie)
+          (p "serverr" "u" z u) (p "serverr" "s" z s))
+        (gen-st (cat "server store" s u cookie)))))
+  (lang (random32 atom) (random48 atom) (password atom) (httpreq atom)
+    (httpdata atom)))
+
+(defskeleton ca
+  (vars (any mesg) (cookie data) (request httpreq) (p password)
+    (cr sr random32) (pms random48) (ppk skey) (s ca u name)
+    (pt pt-0 pval) (authstor locn))
+  (defstrand servera 9 (any any) (cookie cookie) (request request) (p p)
+    (cr cr) (sr sr) (pms pms) (ppk ppk) (u u) (s s) (ca ca)
+    (authstor authstor))
+  (non-orig ppk (privk s) (privk ca))
+  (uniq-orig cookie cr sr pms)
+  (traces
+    ((recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "login-successful" (enc cookie (hash ppk (hash pms cr sr)))
+          (hash (hash pms cr sr) "server_write")))
+      (load authstor (cat pt any))
+      (stor authstor (cat pt-0 "server store" s u cookie))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))))
+  (label 96)
+  (realized)
+  (origs (pt-0 (0 7)) (sr (0 1)) (cookie (0 5)))
+  (comment "Not closed under rules"))
+
+(defskeleton ca
+  (vars (any mesg) (cookie data) (request httpreq) (p password)
+    (cr sr random32) (pms random48) (ppk skey) (s ca u name)
+    (pt pt-0 pval) (authstor locn))
+  (defstrand servera 9 (any any) (cookie cookie) (request request) (p p)
+    (cr cr) (sr sr) (pms pms) (ppk ppk) (u u) (s s) (ca ca)
+    (authstor authstor))
+  (non-orig ppk (privk s) (privk ca))
+  (uniq-orig cookie cr sr pms)
+  (facts (neq u s))
+  (rule fact-servera-neq0 trRl_servera-at-6 trRl_servera-at-7)
+  (traces
+    ((recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "login-successful" (enc cookie (hash ppk (hash pms cr sr)))
+          (hash (hash pms cr sr) "server_write")))
+      (load authstor (cat pt any))
+      (stor authstor (cat pt-0 "server store" s u cookie))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))))
+  (label 97)
+  (parent 96)
+  (realized)
+  (shape)
+  (maps
+    ((0)
+      ((s s) (ca ca) (cr cr) (sr sr) (pms pms) (cookie cookie) (u u)
+        (p p) (ppk ppk) (any any) (authstor authstor)
+        (request request))))
+  (origs (pt-0 (0 7)) (sr (0 1)) (cookie (0 5))))
+
+(comment "Nothing left to do")
+
+(defprotocol ca basic
+  (defrole clienta
+    (vars (u s ca name) (cr sr random32) (pms random48) (p password)
+      (cookie any mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "login-successful" cookie
+          (hash (hash pms cr sr) "server_write"))) (load cookiestor any)
+      (stor cookiestor (cat "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write")))))
+  (defrole clientr
+    (vars (u s ca name) (cr sr random32) (pms random48) (cookie mesg)
+      (cookiestor locn) (request httpreq) (response httpdata))
+    (trace (send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (load cookiestor (cat "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write"))))
+    (gen-st (cat "client store" u s cookie)))
+  (defrole servera
+    (vars (u s ca name) (cr sr random32) (pms random48) (p password)
+      (cookie data) (ppk skey) (any mesg) (authstor locn)
+      (request httpreq) (response httpdata))
+    (trace (recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "login-successful" (enc cookie (hash ppk (hash pms cr sr)))
+          (hash (hash pms cr sr) "server_write"))) (load authstor any)
+      (stor authstor (cat "server store" s u cookie))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (send (enc response (hash (hash pms cr sr) "server_write"))))
+    (non-orig ppk)
+    (uniq-orig cookie)
+    (facts (neq u s)))
+  (defrole serverr
+    (vars (u s ca name) (cr sr random32) (pms random48) (cookie data)
+      (ppk skey) (authstor locn) (request httpreq) (response httpdata))
+    (trace (recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (load authstor (cat "server store" s u cookie))
+      (send (enc response (hash (hash pms cr sr) "server_write"))))
+    (non-orig ppk)
+    (facts (neq u s))
+    (gen-st (cat "server store" s u cookie)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (defgenrule scissorsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (leads-to z0 i0 z2 i2))
+        (and (= z1 z2) (= i1 i2)))))
+  (defgenrule cakeRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (leads-to z0 i0 z1 i1)
+          (leads-to z0 i0 z2 i2) (prec z1 i1 z2 i2)) (false))))
+  (defgenrule no-interruption
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (leads-to z0 i0 z2 i2) (trans z1 i1)
+          (same-locn z0 i0 z1 i1) (prec z0 i0 z1 i1) (prec z1 i1 z2 i2))
+        (false))))
+  (defgenrule shearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (same-locn z0 i0 z2 i2)
+          (prec z0 i0 z2 i2))
+        (or (and (= z1 z2) (= i1 i2)) (prec z1 i1 z2 i2)))))
+  (defgenrule invShearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (same-locn z0 i0 z1 i1)
+          (leads-to z1 i1 z2 i2) (prec z0 i0 z2 i2))
+        (or (and (= z0 z1) (= i0 i1)) (prec z0 i0 z1 i1)))))
+  (defgenrule fact-servera-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p "servera" z (idx 5)) (p "servera" "s" z s)
+          (p "servera" "u" z u)) (fact neq u s))))
+  (defgenrule fact-serverr-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p "serverr" z (idx 6)) (p "serverr" "s" z s)
+          (p "serverr" "u" z u)) (fact neq u s))))
+  (defgenrule trRl_clienta-at-7
+    (forall ((z strd))
+      (implies (p "clienta" z (idx 8)) (trans z (idx 7)))))
+  (defgenrule trRl_clienta-at-6
+    (forall ((z strd))
+      (implies (p "clienta" z (idx 8)) (trans z (idx 6)))))
+  (defgenrule trRl_servera-at-7
+    (forall ((z strd))
+      (implies (p "servera" z (idx 8)) (trans z (idx 7)))))
+  (defgenrule trRl_servera-at-6
+    (forall ((z strd))
+      (implies (p "servera" z (idx 8)) (trans z (idx 6)))))
+  (defgenrule gen-st-clientr-0
+    (forall ((z strd) (cookie mesg) (s u name))
+      (implies
+        (and (p "clientr" z (idx 5)) (p "clientr" "cookie" z cookie)
+          (p "clientr" "s" z s) (p "clientr" "u" z u))
+        (gen-st (cat "client store" u s cookie)))))
+  (defgenrule gen-st-serverr-0
+    (forall ((z strd) (cookie data) (u s name))
+      (implies
+        (and (p "serverr" z (idx 6)) (p "serverr" "cookie" z cookie)
+          (p "serverr" "u" z u) (p "serverr" "s" z s))
+        (gen-st (cat "server store" s u cookie)))))
+  (lang (random32 atom) (random48 atom) (password atom) (httpreq atom)
+    (httpdata atom)))
+
+(defskeleton ca
+  (vars (cookie data) (request httpreq) (cr sr random32) (pms random48)
+    (ppk skey) (s ca u name) (pt pval) (authstor locn))
+  (defstrand serverr 6 (cookie cookie) (request request) (cr cr) (sr sr)
+    (pms pms) (ppk ppk) (u u) (s s) (ca ca) (authstor authstor))
+  (non-orig ppk (privk s) (privk ca))
+  (uniq-orig sr)
+  (traces
+    ((recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (load authstor (cat pt "server store" s u cookie))))
+  (label 98)
+  (unrealized (0 4))
+  (origs (sr (0 1)))
+  (comment "Not closed under rules"))
+
+(comment "Nothing left to do")
+
+(defprotocol ca basic
+  (defrole clienta
+    (vars (u s ca name) (cr sr random32) (pms random48) (p password)
+      (cookie any mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "login-successful" cookie
+          (hash (hash pms cr sr) "server_write"))) (load cookiestor any)
+      (stor cookiestor (cat "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write")))))
+  (defrole clientr
+    (vars (u s ca name) (cr sr random32) (pms random48) (cookie mesg)
+      (cookiestor locn) (request httpreq) (response httpdata))
+    (trace (send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (load cookiestor (cat "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write"))))
+    (gen-st (cat "client store" u s cookie)))
+  (defrole servera
+    (vars (u s ca name) (cr sr random32) (pms random48) (p password)
+      (cookie data) (ppk skey) (any mesg) (authstor locn)
+      (request httpreq) (response httpdata))
+    (trace (recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "login-successful" (enc cookie (hash ppk (hash pms cr sr)))
+          (hash (hash pms cr sr) "server_write"))) (load authstor any)
+      (stor authstor (cat "server store" s u cookie))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (send (enc response (hash (hash pms cr sr) "server_write"))))
+    (non-orig ppk)
+    (uniq-orig cookie)
+    (facts (neq u s)))
+  (defrole serverr
+    (vars (u s ca name) (cr sr random32) (pms random48) (cookie data)
+      (ppk skey) (authstor locn) (request httpreq) (response httpdata))
+    (trace (recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (load authstor (cat "server store" s u cookie))
+      (send (enc response (hash (hash pms cr sr) "server_write"))))
+    (non-orig ppk)
+    (facts (neq u s))
+    (gen-st (cat "server store" s u cookie)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (defgenrule scissorsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (leads-to z0 i0 z2 i2))
+        (and (= z1 z2) (= i1 i2)))))
+  (defgenrule cakeRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (leads-to z0 i0 z1 i1)
+          (leads-to z0 i0 z2 i2) (prec z1 i1 z2 i2)) (false))))
+  (defgenrule no-interruption
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (leads-to z0 i0 z2 i2) (trans z1 i1)
+          (same-locn z0 i0 z1 i1) (prec z0 i0 z1 i1) (prec z1 i1 z2 i2))
+        (false))))
+  (defgenrule shearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (same-locn z0 i0 z2 i2)
+          (prec z0 i0 z2 i2))
+        (or (and (= z1 z2) (= i1 i2)) (prec z1 i1 z2 i2)))))
+  (defgenrule invShearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (same-locn z0 i0 z1 i1)
+          (leads-to z1 i1 z2 i2) (prec z0 i0 z2 i2))
+        (or (and (= z0 z1) (= i0 i1)) (prec z0 i0 z1 i1)))))
+  (defgenrule fact-servera-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p "servera" z (idx 5)) (p "servera" "s" z s)
+          (p "servera" "u" z u)) (fact neq u s))))
+  (defgenrule fact-serverr-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p "serverr" z (idx 6)) (p "serverr" "s" z s)
+          (p "serverr" "u" z u)) (fact neq u s))))
+  (defgenrule trRl_clienta-at-7
+    (forall ((z strd))
+      (implies (p "clienta" z (idx 8)) (trans z (idx 7)))))
+  (defgenrule trRl_clienta-at-6
+    (forall ((z strd))
+      (implies (p "clienta" z (idx 8)) (trans z (idx 6)))))
+  (defgenrule trRl_servera-at-7
+    (forall ((z strd))
+      (implies (p "servera" z (idx 8)) (trans z (idx 7)))))
+  (defgenrule trRl_servera-at-6
+    (forall ((z strd))
+      (implies (p "servera" z (idx 8)) (trans z (idx 6)))))
+  (defgenrule gen-st-clientr-0
+    (forall ((z strd) (cookie mesg) (s u name))
+      (implies
+        (and (p "clientr" z (idx 5)) (p "clientr" "cookie" z cookie)
+          (p "clientr" "s" z s) (p "clientr" "u" z u))
+        (gen-st (cat "client store" u s cookie)))))
+  (defgenrule gen-st-serverr-0
+    (forall ((z strd) (cookie data) (u s name))
+      (implies
+        (and (p "serverr" z (idx 6)) (p "serverr" "cookie" z cookie)
+          (p "serverr" "u" z u) (p "serverr" "s" z s))
+        (gen-st (cat "server store" s u cookie)))))
+  (lang (random32 atom) (random48 atom) (password atom) (httpreq atom)
+    (httpdata atom)))
+
+(defskeleton ca
+  (vars (any mesg) (cookie data) (response httpdata) (request httpreq)
+    (p password) (cr sr random32) (pms random48) (u s ca name)
+    (pt pt-0 pval) (cookiestor locn))
+  (deflistener cookie)
+  (defstrand clienta 10 (cookie cookie) (any any) (response response)
+    (request request) (p p) (cr cr) (sr sr) (pms pms) (u u) (s s)
+    (ca ca) (cookiestor cookiestor))
+  (non-orig (privk s) (privk ca))
+  (pen-non-orig p)
+  (uniq-orig cr sr pms)
+  (goals
+    (forall
+      ((any mesg) (cookie data) (response httpdata) (request httpreq)
+        (p password) (cr sr random32) (pms random48) (u s ca name)
+        (cookiestor locn) (z z-0 strd))
+      (implies
+        (and (p "clienta" z 10) (p "" z-0 2) (p "clienta" "any" z any)
+          (p "clienta" "cookie" z cookie)
+          (p "clienta" "response" z response)
+          (p "clienta" "request" z request) (p "clienta" "p" z p)
+          (p "clienta" "cr" z cr) (p "clienta" "sr" z sr)
+          (p "clienta" "pms" z pms) (p "clienta" "u" z u)
+          (p "clienta" "s" z s) (p "clienta" "ca" z ca)
+          (p "clienta" "cookiestor" z cookiestor) (p "" "x" z-0 cookie)
+          (non (privk s)) (non (privk ca)) (pnon p) (uniq sr)
+          (uniq-at cr z 0) (uniq-at pms z 2)) (false))))
+  (traces ((recv cookie) (send cookie))
+    ((send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "login-successful" cookie
+          (hash (hash pms cr sr) "server_write")))
+      (load cookiestor (cat pt any))
+      (stor cookiestor (cat pt-0 "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write")))))
+  (label 101)
+  (unrealized (1 1) (1 3) (1 5) (1 9))
+  (origs (pt-0 (1 7)) (cr (1 0)) (pms (1 2)))
+  (comment "Not closed under rules"))
+
+(comment "Nothing left to do")
+
+(defprotocol ca basic
+  (defrole clienta
+    (vars (u s ca name) (cr sr random32) (pms random48) (p password)
+      (cookie any mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "login-successful" cookie
+          (hash (hash pms cr sr) "server_write"))) (load cookiestor any)
+      (stor cookiestor (cat "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write")))))
+  (defrole clientr
+    (vars (u s ca name) (cr sr random32) (pms random48) (cookie mesg)
+      (cookiestor locn) (request httpreq) (response httpdata))
+    (trace (send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (load cookiestor (cat "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write"))))
+    (gen-st (cat "client store" u s cookie)))
+  (defrole servera
+    (vars (u s ca name) (cr sr random32) (pms random48) (p password)
+      (cookie data) (ppk skey) (any mesg) (authstor locn)
+      (request httpreq) (response httpdata))
+    (trace (recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "login-successful" (enc cookie (hash ppk (hash pms cr sr)))
+          (hash (hash pms cr sr) "server_write"))) (load authstor any)
+      (stor authstor (cat "server store" s u cookie))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (send (enc response (hash (hash pms cr sr) "server_write"))))
+    (non-orig ppk)
+    (uniq-orig cookie)
+    (facts (neq u s)))
+  (defrole serverr
+    (vars (u s ca name) (cr sr random32) (pms random48) (cookie data)
+      (ppk skey) (authstor locn) (request httpreq) (response httpdata))
+    (trace (recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (load authstor (cat "server store" s u cookie))
+      (send (enc response (hash (hash pms cr sr) "server_write"))))
+    (non-orig ppk)
+    (facts (neq u s))
+    (gen-st (cat "server store" s u cookie)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (defgenrule scissorsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (leads-to z0 i0 z2 i2))
+        (and (= z1 z2) (= i1 i2)))))
+  (defgenrule cakeRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (leads-to z0 i0 z1 i1)
+          (leads-to z0 i0 z2 i2) (prec z1 i1 z2 i2)) (false))))
+  (defgenrule no-interruption
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (leads-to z0 i0 z2 i2) (trans z1 i1)
+          (same-locn z0 i0 z1 i1) (prec z0 i0 z1 i1) (prec z1 i1 z2 i2))
+        (false))))
+  (defgenrule shearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (same-locn z0 i0 z2 i2)
+          (prec z0 i0 z2 i2))
+        (or (and (= z1 z2) (= i1 i2)) (prec z1 i1 z2 i2)))))
+  (defgenrule invShearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (same-locn z0 i0 z1 i1)
+          (leads-to z1 i1 z2 i2) (prec z0 i0 z2 i2))
+        (or (and (= z0 z1) (= i0 i1)) (prec z0 i0 z1 i1)))))
+  (defgenrule fact-servera-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p "servera" z (idx 5)) (p "servera" "s" z s)
+          (p "servera" "u" z u)) (fact neq u s))))
+  (defgenrule fact-serverr-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p "serverr" z (idx 6)) (p "serverr" "s" z s)
+          (p "serverr" "u" z u)) (fact neq u s))))
+  (defgenrule trRl_clienta-at-7
+    (forall ((z strd))
+      (implies (p "clienta" z (idx 8)) (trans z (idx 7)))))
+  (defgenrule trRl_clienta-at-6
+    (forall ((z strd))
+      (implies (p "clienta" z (idx 8)) (trans z (idx 6)))))
+  (defgenrule trRl_servera-at-7
+    (forall ((z strd))
+      (implies (p "servera" z (idx 8)) (trans z (idx 7)))))
+  (defgenrule trRl_servera-at-6
+    (forall ((z strd))
+      (implies (p "servera" z (idx 8)) (trans z (idx 6)))))
+  (defgenrule gen-st-clientr-0
+    (forall ((z strd) (cookie mesg) (s u name))
+      (implies
+        (and (p "clientr" z (idx 5)) (p "clientr" "cookie" z cookie)
+          (p "clientr" "s" z s) (p "clientr" "u" z u))
+        (gen-st (cat "client store" u s cookie)))))
+  (defgenrule gen-st-serverr-0
+    (forall ((z strd) (cookie data) (u s name))
+      (implies
+        (and (p "serverr" z (idx 6)) (p "serverr" "cookie" z cookie)
+          (p "serverr" "u" z u) (p "serverr" "s" z s))
+        (gen-st (cat "server store" s u cookie)))))
+  (lang (random32 atom) (random48 atom) (password atom) (httpreq atom)
+    (httpdata atom)))
+
+(defskeleton ca
+  (vars (any mesg) (cookie data) (response httpdata) (request httpreq)
+    (p password) (cr sr random32) (pms random48) (ppk skey)
+    (u s ca name) (pt pt-0 pval) (cookiestor locn))
+  (defstrand clienta 10
+    (cookie (enc cookie (hash ppk (hash pms cr sr)))) (any any)
+    (response response) (request request) (p p) (cr cr) (sr sr)
+    (pms pms) (u u) (s s) (ca ca) (cookiestor cookiestor))
+  (non-orig ppk (privk s) (privk ca))
+  (uniq-orig cr sr pms)
+  (goals
+    (forall
+      ((z strd) (cookie data) (u s ca name) (cr sr random32)
+        (pms random48) (ppk skey))
+      (implies
+        (and (p "clienta" z 10)
+          (p "clienta" "cookie" z
+            (enc cookie (hash ppk (hash pms cr sr))))
+          (p "clienta" "u" z u) (p "clienta" "s" z s)
+          (p "clienta" "ca" z ca) (p "clienta" "cr" z cr)
+          (p "clienta" "sr" z sr) (p "clienta" "pms" z pms)
+          (non (privk ca)) (non (privk s)) (non ppk) (uniq sr)
+          (uniq-at cr z 0) (uniq-at pms z 2))
+        (exists ((z0 strd))
+          (and (p "servera" z0 10) (p "servera" "cookie" z0 cookie)
+            (p "servera" "u" z0 u) (p "servera" "s" z0 s)
+            (uniq-at cookie z0 5) (fact neq u s))))))
+  (traces
+    ((send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "login-successful" (enc cookie (hash ppk (hash pms cr sr)))
+          (hash (hash pms cr sr) "server_write")))
+      (load cookiestor (cat pt any))
+      (stor cookiestor
+        (cat pt-0 "client store" u s
+          (enc cookie (hash ppk (hash pms cr sr)))))
+      (send
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write")))))
+  (label 115)
+  (unrealized (0 1) (0 3) (0 5) (0 9))
+  (origs (pt-0 (0 7)) (cr (0 0)) (pms (0 2)))
+  (comment "Not closed under rules"))
+
+(defskeleton ca
+  (vars (any any-0 mesg) (cookie data) (response httpdata)
+    (request httpreq) (p password) (cr sr random32) (pms random48)
+    (ppk skey) (u s ca name) (pt pt-0 pt-1 pt-2 pval)
+    (cookiestor authstor locn))
+  (defstrand clienta 10
+    (cookie (enc cookie (hash ppk (hash pms cr sr)))) (any any)
+    (response response) (request request) (p p) (cr cr) (sr sr)
+    (pms pms) (u u) (s s) (ca ca) (cookiestor cookiestor))
+  (defstrand servera 10 (any any-0) (cookie cookie) (response response)
+    (request request) (p p) (cr cr) (sr sr) (pms pms) (ppk ppk) (u u)
+    (s s) (ca ca) (authstor authstor))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((0 4) (1 4)) ((0 8) (1 8))
+    ((1 1) (0 1)) ((1 3) (0 3)) ((1 5) (0 5)) ((1 9) (0 9)))
+  (non-orig ppk (privk s) (privk ca))
+  (uniq-orig cookie cr sr pms)
+  (facts (neq u s))
+  (rule fact-servera-neq0 trRl_clienta-at-6 trRl_clienta-at-7
+    trRl_servera-at-6 trRl_servera-at-7)
+  (operation encryption-test (displaced 2 0 clienta 9)
+    (enc (enc cookie (hash ppk (hash pms cr sr))) request-0
+      (hash (hash pms cr sr) "client_write")) (1 8))
+  (traces
+    ((send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "login-successful" (enc cookie (hash ppk (hash pms cr sr)))
+          (hash (hash pms cr sr) "server_write")))
+      (load cookiestor (cat pt any))
+      (stor cookiestor
+        (cat pt-0 "client store" u s
+          (enc cookie (hash ppk (hash pms cr sr)))))
+      (send
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write"))))
+    ((recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "login-successful" (enc cookie (hash ppk (hash pms cr sr)))
+          (hash (hash pms cr sr) "server_write")))
+      (load authstor (cat pt-1 any-0))
+      (stor authstor (cat pt-2 "server store" s u cookie))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (send (enc response (hash (hash pms cr sr) "server_write")))))
+  (label 141)
+  (parent 115)
+  (realized)
+  (shape)
+  (satisfies yes)
+  (maps
+    ((0)
+      ((cookie cookie) (u u) (s s) (ca ca) (cr cr) (sr sr) (pms pms)
+        (ppk ppk) (p p) (any any) (cookiestor cookiestor)
+        (request request) (response response))))
+  (origs (pt-0 (0 7)) (cookie (1 5)) (pt-2 (1 7)) (sr (1 1)) (cr (0 0))
+    (pms (0 2))))
+
+(comment "Nothing left to do")
+
+(defprotocol ca basic
+  (defrole clienta
+    (vars (u s ca name) (cr sr random32) (pms random48) (p password)
+      (cookie any mesg) (cookiestor locn) (request httpreq)
+      (response httpdata))
+    (trace (send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "login-successful" cookie
+          (hash (hash pms cr sr) "server_write"))) (load cookiestor any)
+      (stor cookiestor (cat "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write")))))
+  (defrole clientr
+    (vars (u s ca name) (cr sr random32) (pms random48) (cookie mesg)
+      (cookiestor locn) (request httpreq) (response httpdata))
+    (trace (send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (load cookiestor (cat "client store" u s cookie))
+      (send (enc cookie request (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write"))))
+    (gen-st (cat "client store" u s cookie)))
+  (defrole servera
+    (vars (u s ca name) (cr sr random32) (pms random48) (p password)
+      (cookie data) (ppk skey) (any mesg) (authstor locn)
+      (request httpreq) (response httpdata))
+    (trace (recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc "login" u p (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "login-successful" (enc cookie (hash ppk (hash pms cr sr)))
+          (hash (hash pms cr sr) "server_write"))) (load authstor any)
+      (stor authstor (cat "server store" s u cookie))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (send (enc response (hash (hash pms cr sr) "server_write"))))
+    (non-orig ppk)
+    (uniq-orig cookie)
+    (facts (neq u s)))
+  (defrole serverr
+    (vars (u s ca name) (cr sr random32) (pms random48) (cookie data)
+      (ppk skey) (authstor locn) (request httpreq) (response httpdata))
+    (trace (recv cr)
+      (send (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (load authstor (cat "server store" s u cookie))
+      (send (enc response (hash (hash pms cr sr) "server_write"))))
+    (non-orig ppk)
+    (facts (neq u s))
+    (gen-st (cat "server store" s u cookie)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (defgenrule scissorsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (leads-to z0 i0 z2 i2))
+        (and (= z1 z2) (= i1 i2)))))
+  (defgenrule cakeRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (leads-to z0 i0 z1 i1)
+          (leads-to z0 i0 z2 i2) (prec z1 i1 z2 i2)) (false))))
+  (defgenrule no-interruption
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (leads-to z0 i0 z2 i2) (trans z1 i1)
+          (same-locn z0 i0 z1 i1) (prec z0 i0 z1 i1) (prec z1 i1 z2 i2))
+        (false))))
+  (defgenrule shearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (trans z2 i2)
+          (leads-to z0 i0 z1 i1) (same-locn z0 i0 z2 i2)
+          (prec z0 i0 z2 i2))
+        (or (and (= z1 z2) (= i1 i2)) (prec z1 i1 z2 i2)))))
+  (defgenrule invShearsRule
+    (forall ((z0 z1 z2 strd) (i0 i1 i2 indx))
+      (implies
+        (and (trans z0 i0) (trans z1 i1) (same-locn z0 i0 z1 i1)
+          (leads-to z1 i1 z2 i2) (prec z0 i0 z2 i2))
+        (or (and (= z0 z1) (= i0 i1)) (prec z0 i0 z1 i1)))))
+  (defgenrule fact-servera-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p "servera" z (idx 5)) (p "servera" "s" z s)
+          (p "servera" "u" z u)) (fact neq u s))))
+  (defgenrule fact-serverr-neq0
+    (forall ((z strd) (s u name))
+      (implies
+        (and (p "serverr" z (idx 6)) (p "serverr" "s" z s)
+          (p "serverr" "u" z u)) (fact neq u s))))
+  (defgenrule trRl_clienta-at-7
+    (forall ((z strd))
+      (implies (p "clienta" z (idx 8)) (trans z (idx 7)))))
+  (defgenrule trRl_clienta-at-6
+    (forall ((z strd))
+      (implies (p "clienta" z (idx 8)) (trans z (idx 6)))))
+  (defgenrule trRl_servera-at-7
+    (forall ((z strd))
+      (implies (p "servera" z (idx 8)) (trans z (idx 7)))))
+  (defgenrule trRl_servera-at-6
+    (forall ((z strd))
+      (implies (p "servera" z (idx 8)) (trans z (idx 6)))))
+  (defgenrule gen-st-clientr-0
+    (forall ((z strd) (cookie mesg) (s u name))
+      (implies
+        (and (p "clientr" z (idx 5)) (p "clientr" "cookie" z cookie)
+          (p "clientr" "s" z s) (p "clientr" "u" z u))
+        (gen-st (cat "client store" u s cookie)))))
+  (defgenrule gen-st-serverr-0
+    (forall ((z strd) (cookie data) (u s name))
+      (implies
+        (and (p "serverr" z (idx 6)) (p "serverr" "cookie" z cookie)
+          (p "serverr" "u" z u) (p "serverr" "s" z s))
+        (gen-st (cat "server store" s u cookie)))))
+  (lang (random32 atom) (random48 atom) (password atom) (httpreq atom)
+    (httpdata atom)))
+
+(defskeleton ca
+  (vars (cookie data) (response httpdata) (request httpreq)
+    (cr sr random32) (pms random48) (ppk skey) (u s ca name) (pt pval)
+    (cookiestor locn))
+  (defstrand clientr 7 (cookie (enc cookie (hash ppk (hash pms cr sr))))
+    (response response) (request request) (cr cr) (sr sr) (pms pms)
+    (u u) (s s) (ca ca) (cookiestor cookiestor))
+  (non-orig ppk (privk s) (privk ca))
+  (uniq-orig cr sr pms)
+  (goals
+    (forall
+      ((z strd) (cookie data) (u s ca name) (cr sr random32)
+        (pms random48) (ppk skey))
+      (implies
+        (and (p "clientr" z 7)
+          (p "clientr" "cookie" z
+            (enc cookie (hash ppk (hash pms cr sr))))
+          (p "clientr" "u" z u) (p "clientr" "s" z s)
+          (p "clientr" "ca" z ca) (p "clientr" "cr" z cr)
+          (p "clientr" "sr" z sr) (p "clientr" "pms" z pms)
+          (non (privk ca)) (non (privk s)) (non ppk) (uniq sr)
+          (uniq-at cr z 0) (uniq-at pms z 2))
+        (exists ((z0 strd))
+          (and (p "servera" z0 8) (p "servera" "cookie" z0 cookie)
+            (p "servera" "u" z0 u) (p "servera" "s" z0 s)
+            (uniq-at cookie z0 5) (fact neq u s))))))
+  (traces
+    ((send cr)
+      (recv (cat sr s (pubk s) (enc (hash s (pubk s)) (privk ca))))
+      (send
+        (cat (enc pms (pubk s))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                (enc pms (pubk s))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+              (enc pms (pubk s))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat s (pubk s) (enc (hash s (pubk s)) (privk ca)))
+                    (enc pms (pubk s))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (load cookiestor
+        (cat pt "client store" u s
+          (enc cookie (hash ppk (hash pms cr sr)))))
+      (send
+        (enc (enc cookie (hash ppk (hash pms cr sr))) request
+          (hash (hash pms cr sr) "client_write")))
+      (recv (enc response (hash (hash pms cr sr) "server_write")))))
+  (label 155)
+  (unrealized (0 1) (0 3) (0 4) (0 6))
+  (origs (cr (0 0)) (pms (0 2)))
+  (comment "Not closed under rules"))
+
+(comment "Nothing left to do")

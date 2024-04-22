@@ -1,0 +1,2329 @@
+<?xml version="1.0"?>
+<!-- CPSA 4.4.2 -->
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+ <title>UAF using TLS1.2 with channel ID binding.</title>
+ <meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+ <style>
+  svg.diagram { border-width: 1px; border-style: solid }
+ </style>
+</head>
+<body>
+
+<pre>(comment &quot;CPSA 4.4.2&quot;)
+(comment &quot;Extracted shapes&quot;)
+(herald &quot;UAF using TLS1.2 with channel ID binding.&quot;)
+(comment &quot;CPSA 4.4.2&quot;)
+(comment &quot;All input read from uaf-token-binding-tls12.scm&quot;)</pre>
+
+<p id="top">Trees: <a href="#t0">0</a> <a href="#t15">15</a> <a href="#t30">30</a> <a href="#t47">47</a>.</p>
+
+<p id="t0">Tree <a href="#top">0</a>, POV <a href="#k0">0</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='129.840pt' height='79.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 129.840 79.920' font-size='12.000'>
+  <text
+   x='89.880' y='26.040'
+   style='font-weight: bold; text-anchor: middle; fill: blue;'
+   onclick='window.open(&quot;#k5&quot;, &quot;_self&quot;)'>5</text>
+  <line
+   x1='39.960' y1='39.960' x2='89.880' y2='39.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <text
+   x='39.960' y='26.040' style='text-anchor: middle; fill: black;'
+   onclick='window.open(&quot;#k0&quot;, &quot;_self&quot;)'>0</text>
+  </svg></div>
+
+<pre>(defprotocol uaf-unbound-tls12 basic
+  (defrole client-reg
+    (vars (client username auth server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (recv
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc username appid challenge
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc (hash &quot;key handle&quot; (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) &quot;client_write&quot;)))))
+  (defrole client-auth
+    (vars (client server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (recv
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc appid challenge (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc
+          (hash appid
+            (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;)))))
+  (defrole server-reg
+    (vars (client username auth server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (send
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc username appid challenge
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc (hash &quot;key handle&quot; (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) &quot;client_write&quot;)))))
+  (defrole server-auth
+    (vars (client server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (send
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc appid challenge (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc
+          (hash appid
+            (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;)))))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random32 atom) (random48 atom)))</pre>
+
+<p id="k0">Item <a href="#t0">0</a>, Child: <a href="#k5">5</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='529.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 529.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='489.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g>
+   <title>(enc (hash &quot;key handle&quot; (invk authk) username) (cat auth authk (hash appid challenge (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client))))) (enc auth authk (hash appid challenge (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client)))) (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;))</title>
+   <circle cx='39.960' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(enc username appid challenge (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle style='fill: red;' cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash pms &quot;server finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))) (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle style='fill: red;' cx='39.960' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))</title>
+   <circle cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat sr server (pubk server) (enc (hash server (pubk server)) (privk ca)))</title>
+   <circle style='fill: red;' cx='39.960' cy='189.960' r='6.000'/></g>
+  <g><title>cr</title><circle cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((cr cr) (sr sr) (pms pms) (challenge challenge) (authk authk) (client client) (username username) (auth auth) (server server) (ca ca) (appid appid))</title>
+   <text
+    x='39.960' y='77.460' style='text-anchor: middle;'>client-reg</text>
+   </g>
+  <text
+   x='39.960' y='39.960'
+   style='text-anchor: middle;'>uaf-unbound-tls12 0</text></svg></div>
+
+<pre>(defskeleton uaf-unbound-tls12
+  (vars (cr sr random32) (pms random48) (challenge text) (authk akey)
+    (client server ca appid username auth name))
+  (defstrand client-reg 6 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (authk authk) (client client)
+    (username username) (auth auth) (server server) (ca ca)
+    (appid appid))
+  (non-orig (invk authk) (privk client) (privk server) (privk ca))
+  (uniq-orig cr sr pms)
+  (goals
+    (forall
+      ((cr sr random32) (pms random48) (challenge text)
+        (client server ca appid name) (authk akey) (z strd))
+      (implies
+        (and (p &quot;client-reg&quot; z 6) (p &quot;client-reg&quot; &quot;cr&quot; z cr)
+          (p &quot;client-reg&quot; &quot;sr&quot; z sr) (p &quot;client-reg&quot; &quot;pms&quot; z pms)
+          (p &quot;client-reg&quot; &quot;challenge&quot; z challenge)
+          (p &quot;client-reg&quot; &quot;authk&quot; z authk)
+          (p &quot;client-reg&quot; &quot;server&quot; z server) (p &quot;client-reg&quot; &quot;ca&quot; z ca)
+          (p &quot;client-reg&quot; &quot;appid&quot; z appid)
+          (p &quot;client-reg&quot; &quot;client&quot; z client) (non (privk client))
+          (non (invk authk)) (non (privk server)) (non (privk ca))
+          (uniq-at cr z 0) (uniq-at pms z 2) (uniq sr))
+        (exists ((z-0 strd))
+          (and (p &quot;server-reg&quot; z-0 5)
+            (p &quot;server-reg&quot; &quot;challenge&quot; z-0 challenge)
+            (p &quot;server-reg&quot; &quot;server&quot; z-0 server)
+            (p &quot;server-reg&quot; &quot;appid&quot; z-0 appid))))))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (recv
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc username appid challenge
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc (hash &quot;key handle&quot; (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) &quot;client_write&quot;)))))
+  (label 0)
+  (unrealized (0 1) (0 3) (0 4))
+  (origs (cr (0 0)) (pms (0 2)))
+  (comment &quot;1 in cohort - 1 not yet seen&quot;))</pre>
+
+<p id="k5">Item <a href="#t0">5</a>, Parent: <a href="#k0">0</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='179.880pt' height='529.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 179.880 529.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='139.920' y1='114.960' x2='139.920' y2='414.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='489.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <path
+   d='M 139.920 414.960 Q 92.940 414.960 45.960 414.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc username appid challenge (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle cx='139.920' cy='414.960' r='6.000'/></g>
+  <path
+   d='M 139.920 339.960 Q 92.940 339.960 45.960 339.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc (hash pms &quot;server finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))) (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle cx='139.920' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))</title>
+   <circle style='fill: blue;' cx='139.920' cy='264.960' r='6.000'/></g>
+  <path
+   d='M 139.920 189.960 Q 92.940 189.960 45.960 189.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(cat sr server (pubk server) (enc (hash server (pubk server)) (privk ca)))</title>
+   <circle cx='139.920' cy='189.960' r='6.000'/></g>
+  <g><title>cr</title>
+   <circle style='fill: blue;' cx='139.920' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash &quot;key handle&quot; (invk authk) username) (cat auth authk (hash appid challenge (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client))))) (enc auth authk (hash appid challenge (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client)))) (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;))</title>
+   <circle cx='39.960' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(enc username appid challenge (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle style='fill: blue;' cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash pms &quot;server finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))) (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle style='fill: blue;' cx='39.960' cy='339.960' r='6.000'/></g>
+  <path
+   d='M 39.960 264.960 Q 86.940 264.960 133.920 264.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(cat (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))</title>
+   <circle cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat sr server (pubk server) (enc (hash server (pubk server)) (privk ca)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='189.960' r='6.000'/></g>
+  <path
+   d='M 39.960 114.960 Q 86.940 114.960 133.920 114.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g><title>cr</title><circle cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((cr cr) (sr sr) (pms pms) (challenge challenge) (username username) (server server) (ca ca) (appid appid))</title>
+   <text
+    x='139.920' y='77.460'
+    style='text-anchor: middle;'>server-reg</text></g>
+  <g>
+   <title>((cr cr) (sr sr) (pms pms) (challenge challenge) (authk authk) (client client) (username username) (auth auth) (server server) (ca ca) (appid appid))</title>
+   <text
+    x='39.960' y='77.460' style='text-anchor: middle;'>client-reg</text>
+   </g>
+  <text
+   x='89.940' y='39.960'
+   style='text-anchor: middle;'>uaf-unbound-tls12 5</text></svg></div>
+
+<pre>(defskeleton uaf-unbound-tls12
+  (vars (cr sr random32) (pms random48) (challenge text) (authk akey)
+    (client appid username auth server ca name))
+  (defstrand client-reg 6 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (authk authk) (client client)
+    (username username) (auth auth) (server server) (ca ca)
+    (appid appid))
+  (defstrand server-reg 5 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (username username) (server server) (ca ca)
+    (appid appid))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((1 1) (0 1)) ((1 3) (0 3))
+    ((1 4) (0 4)))
+  (non-orig (invk authk) (privk client) (privk server) (privk ca))
+  (uniq-orig cr sr pms)
+  (operation encryption-test (displaced 1 2 server-reg 5)
+    (enc username appid challenge
+      (hash (hash pms cr sr) &quot;server_write&quot;)) (0 4))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (recv
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc username appid challenge
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc (hash &quot;key handle&quot; (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) &quot;client_write&quot;))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (send
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc username appid challenge
+          (hash (hash pms cr sr) &quot;server_write&quot;)))))
+  (label 5)
+  (parent 0)
+  (realized)
+  (shape)
+  (satisfies yes)
+  (maps
+    ((0)
+      ((cr cr) (sr sr) (pms pms) (challenge challenge) (client client)
+        (server server) (ca ca) (appid appid) (authk authk)
+        (username username) (auth auth))))
+  (origs (sr (1 1)) (cr (0 0)) (pms (0 2))))</pre>
+
+<p id="t15">Tree <a href="#top">15</a>, POV <a href="#k15">15</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='129.840pt' height='79.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 129.840 79.920' font-size='12.000'>
+  <text
+   x='89.880' y='26.040'
+   style='font-weight: bold; text-anchor: middle; fill: blue;'
+   onclick='window.open(&quot;#k20&quot;, &quot;_self&quot;)'>20</text>
+  <line
+   x1='39.960' y1='39.960' x2='89.880' y2='39.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <text
+   x='39.960' y='26.040' style='text-anchor: middle; fill: black;'
+   onclick='window.open(&quot;#k15&quot;, &quot;_self&quot;)'>15</text>
+  </svg></div>
+
+<pre>(defprotocol uaf-unbound-tls12 basic
+  (defrole client-reg
+    (vars (client username auth server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (recv
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc username appid challenge
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc (hash &quot;key handle&quot; (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) &quot;client_write&quot;)))))
+  (defrole client-auth
+    (vars (client server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (recv
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc appid challenge (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc
+          (hash appid
+            (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;)))))
+  (defrole server-reg
+    (vars (client username auth server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (send
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc username appid challenge
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc (hash &quot;key handle&quot; (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) &quot;client_write&quot;)))))
+  (defrole server-auth
+    (vars (client server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (send
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc appid challenge (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc
+          (hash appid
+            (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;)))))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random32 atom) (random48 atom)))</pre>
+
+<p id="k15">Item <a href="#t15">15</a>, Child: <a href="#k20">20</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='529.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 529.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='489.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g>
+   <title>(enc (hash appid (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client))) challenge) (enc (hash appid (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client))) challenge) (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;))</title>
+   <circle cx='39.960' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(enc appid challenge (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle style='fill: red;' cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash pms &quot;server finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))) (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle style='fill: red;' cx='39.960' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))</title>
+   <circle cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat sr server (pubk server) (enc (hash server (pubk server)) (privk ca)))</title>
+   <circle style='fill: red;' cx='39.960' cy='189.960' r='6.000'/></g>
+  <g><title>cr</title><circle cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((cr cr) (sr sr) (pms pms) (challenge challenge) (authk authk) (client client) (server server) (ca ca) (appid appid))</title>
+   <text
+    x='39.960' y='77.460'
+    style='text-anchor: middle;'>client-auth</text></g>
+  <text
+   x='39.960' y='39.960'
+   style='text-anchor: middle;'>uaf-unbound-tls12 15</text></svg></div>
+
+<pre>(defskeleton uaf-unbound-tls12
+  (vars (cr sr random32) (pms random48) (challenge text) (authk akey)
+    (client server ca appid name))
+  (defstrand client-auth 6 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (authk authk) (client client) (server server)
+    (ca ca) (appid appid))
+  (non-orig (invk authk) (privk client) (privk server) (privk ca))
+  (uniq-orig cr sr pms)
+  (goals
+    (forall
+      ((cr sr random32) (pms random48) (challenge text)
+        (client server ca appid name) (authk akey) (z strd))
+      (implies
+        (and (p &quot;client-auth&quot; z 6) (p &quot;client-auth&quot; &quot;cr&quot; z cr)
+          (p &quot;client-auth&quot; &quot;sr&quot; z sr) (p &quot;client-auth&quot; &quot;pms&quot; z pms)
+          (p &quot;client-auth&quot; &quot;challenge&quot; z challenge)
+          (p &quot;client-auth&quot; &quot;authk&quot; z authk)
+          (p &quot;client-auth&quot; &quot;server&quot; z server)
+          (p &quot;client-auth&quot; &quot;ca&quot; z ca) (p &quot;client-auth&quot; &quot;appid&quot; z appid)
+          (p &quot;client-auth&quot; &quot;client&quot; z client) (non (privk client))
+          (non (invk authk)) (non (privk server)) (non (privk ca))
+          (uniq-at cr z 0) (uniq-at pms z 2) (uniq sr))
+        (exists ((z-0 strd))
+          (and (p &quot;client-auth&quot; z-0 5)
+            (p &quot;client-auth&quot; &quot;challenge&quot; z-0 challenge)
+            (p &quot;client-auth&quot; &quot;server&quot; z-0 server)
+            (p &quot;client-auth&quot; &quot;appid&quot; z-0 appid))))))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (recv
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc appid challenge (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc
+          (hash appid
+            (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;)))))
+  (label 15)
+  (unrealized (0 1) (0 3) (0 4))
+  (origs (cr (0 0)) (pms (0 2)))
+  (comment &quot;1 in cohort - 1 not yet seen&quot;))</pre>
+
+<p id="k20">Item <a href="#t15">20</a>, Parent: <a href="#k15">15</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='179.880pt' height='529.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 179.880 529.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='139.920' y1='114.960' x2='139.920' y2='414.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='489.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <path
+   d='M 139.920 414.960 Q 92.940 414.960 45.960 414.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc appid challenge (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle cx='139.920' cy='414.960' r='6.000'/></g>
+  <path
+   d='M 139.920 339.960 Q 92.940 339.960 45.960 339.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc (hash pms &quot;server finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))) (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle cx='139.920' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))</title>
+   <circle style='fill: blue;' cx='139.920' cy='264.960' r='6.000'/></g>
+  <path
+   d='M 139.920 189.960 Q 92.940 189.960 45.960 189.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(cat sr server (pubk server) (enc (hash server (pubk server)) (privk ca)))</title>
+   <circle cx='139.920' cy='189.960' r='6.000'/></g>
+  <g><title>cr</title>
+   <circle style='fill: blue;' cx='139.920' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash appid (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client))) challenge) (enc (hash appid (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client))) challenge) (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;))</title>
+   <circle cx='39.960' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(enc appid challenge (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle style='fill: blue;' cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash pms &quot;server finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))) (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle style='fill: blue;' cx='39.960' cy='339.960' r='6.000'/></g>
+  <path
+   d='M 39.960 264.960 Q 86.940 264.960 133.920 264.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(cat (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))</title>
+   <circle cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat sr server (pubk server) (enc (hash server (pubk server)) (privk ca)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='189.960' r='6.000'/></g>
+  <path
+   d='M 39.960 114.960 Q 86.940 114.960 133.920 114.960'
+   style='stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g><title>cr</title><circle cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((cr cr) (sr sr) (pms pms) (challenge challenge) (server server) (ca ca) (appid appid))</title>
+   <text
+    x='139.920' y='77.460'
+    style='text-anchor: middle;'>server-auth</text></g>
+  <g>
+   <title>((cr cr) (sr sr) (pms pms) (challenge challenge) (authk authk) (client client) (server server) (ca ca) (appid appid))</title>
+   <text
+    x='39.960' y='77.460'
+    style='text-anchor: middle;'>client-auth</text></g>
+  <text
+   x='89.940' y='39.960'
+   style='text-anchor: middle;'>uaf-unbound-tls12 20</text></svg></div>
+
+<pre>(defskeleton uaf-unbound-tls12
+  (vars (cr sr random32) (pms random48) (challenge text) (authk akey)
+    (client appid server ca name))
+  (defstrand client-auth 6 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (authk authk) (client client) (server server)
+    (ca ca) (appid appid))
+  (defstrand server-auth 5 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (server server) (ca ca) (appid appid))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((1 1) (0 1)) ((1 3) (0 3))
+    ((1 4) (0 4)))
+  (non-orig (invk authk) (privk client) (privk server) (privk ca))
+  (uniq-orig cr sr pms)
+  (operation encryption-test (displaced 1 2 server-auth 5)
+    (enc appid challenge (hash (hash pms cr sr) &quot;server_write&quot;)) (0 4))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (recv
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc appid challenge (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc
+          (hash appid
+            (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (send
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc appid challenge (hash (hash pms cr sr) &quot;server_write&quot;)))))
+  (label 20)
+  (parent 15)
+  (realized)
+  (shape)
+  (satisfies yes)
+  (maps
+    ((0)
+      ((cr cr) (sr sr) (pms pms) (challenge challenge) (client client)
+        (server server) (ca ca) (appid appid) (authk authk))))
+  (origs (sr (1 1)) (cr (0 0)) (pms (0 2))))</pre>
+
+<p id="t30">Tree <a href="#top">30</a>, POV <a href="#k30">30</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='129.840pt' height='154.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 129.840 154.920' font-size='12.000'>
+  <text
+   x='89.880' y='101.040'
+   style='font-weight: bold; text-anchor: middle; fill: blue;'
+   onclick='window.open(&quot;#k38&quot;, &quot;_self&quot;)'>38</text>
+  <line
+   x1='39.960' y1='77.460' x2='89.880' y2='114.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <text
+   x='89.880' y='26.040'
+   style='font-weight: bold; text-anchor: middle; fill: blue;'
+   onclick='window.open(&quot;#k35&quot;, &quot;_self&quot;)'>35</text>
+  <line
+   x1='39.960' y1='77.460' x2='89.880' y2='39.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <text
+   x='39.960' y='63.540' style='text-anchor: middle; fill: black;'
+   onclick='window.open(&quot;#k30&quot;, &quot;_self&quot;)'>30</text>
+  </svg></div>
+
+<pre>(defprotocol uaf-unbound-tls12 basic
+  (defrole client-reg
+    (vars (client username auth server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (recv
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc username appid challenge
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc (hash &quot;key handle&quot; (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) &quot;client_write&quot;)))))
+  (defrole client-auth
+    (vars (client server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (recv
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc appid challenge (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc
+          (hash appid
+            (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;)))))
+  (defrole server-reg
+    (vars (client username auth server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (send
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc username appid challenge
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc (hash &quot;key handle&quot; (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) &quot;client_write&quot;)))))
+  (defrole server-auth
+    (vars (client server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (send
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc appid challenge (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc
+          (hash appid
+            (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;)))))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random32 atom) (random48 atom)))</pre>
+
+<p id="k30">Item <a href="#t30">30</a>, Children: <a href="#k35">35</a> <a href="#k38">38</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='529.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 529.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='489.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g>
+   <title>(enc (hash &quot;key handle&quot; (invk authk) username) (cat auth authk (hash appid challenge (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client))))) (enc auth authk (hash appid challenge (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client)))) (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;))</title>
+   <circle style='fill: red;' cx='39.960' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(enc username appid challenge (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash pms &quot;server finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))) (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle cx='39.960' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat sr server (pubk server) (enc (hash server (pubk server)) (privk ca)))</title>
+   <circle cx='39.960' cy='189.960' r='6.000'/></g>
+  <g><title>cr</title>
+   <circle style='fill: blue;' cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((cr cr) (sr sr) (pms pms) (challenge challenge) (authk authk) (client client) (username username) (auth auth) (server server) (ca ca) (appid appid))</title>
+   <text
+    x='39.960' y='77.460' style='text-anchor: middle;'>server-reg</text>
+   </g>
+  <text
+   x='39.960' y='39.960'
+   style='text-anchor: middle;'>uaf-unbound-tls12 30</text></svg></div>
+
+<pre>(defskeleton uaf-unbound-tls12
+  (vars (sr cr random32) (pms random48) (challenge text) (authk akey)
+    (client server ca appid username auth name))
+  (defstrand server-reg 6 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (authk authk) (client client)
+    (username username) (auth auth) (server server) (ca ca)
+    (appid appid))
+  (non-orig (invk authk) (privk client) (privk server) (privk ca))
+  (uniq-orig sr challenge)
+  (goals
+    (forall
+      ((sr random32) (challenge text) (client server ca appid name)
+        (authk akey) (z strd))
+      (implies
+        (and (p &quot;server-reg&quot; z 6) (p &quot;server-reg&quot; &quot;sr&quot; z sr)
+          (p &quot;server-reg&quot; &quot;challenge&quot; z challenge)
+          (p &quot;server-reg&quot; &quot;authk&quot; z authk)
+          (p &quot;server-reg&quot; &quot;server&quot; z server) (p &quot;server-reg&quot; &quot;ca&quot; z ca)
+          (p &quot;server-reg&quot; &quot;appid&quot; z appid)
+          (p &quot;server-reg&quot; &quot;client&quot; z client) (non (privk client))
+          (non (invk authk)) (non (privk server)) (non (privk ca))
+          (uniq-at challenge z 4) (uniq-at sr z 1))
+        (exists ((z-0 strd))
+          (and (p &quot;client-reg&quot; z-0 6)
+            (p &quot;client-reg&quot; &quot;challenge&quot; z-0 challenge)
+            (p &quot;client-reg&quot; &quot;server&quot; z-0 server)
+            (p &quot;client-reg&quot; &quot;appid&quot; z-0 appid))))))
+  (traces
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (send
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc username appid challenge
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc (hash &quot;key handle&quot; (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) &quot;client_write&quot;)))))
+  (label 30)
+  (unrealized (0 5))
+  (origs (challenge (0 4)) (sr (0 1)))
+  (comment &quot;1 in cohort - 1 not yet seen&quot;))</pre>
+
+<p id="k35">Item <a href="#t30">35</a>, Parent: <a href="#k30">30</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='179.880pt' height='529.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 179.880 529.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='139.920' y1='114.960' x2='139.920' y2='489.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='489.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <path
+   d='M 139.920 489.960 Q 92.940 489.960 45.960 489.960'
+   style='stroke-dasharray: 6.000,2.400; stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc (hash &quot;key handle&quot; (invk authk) username) (cat auth authk (hash appid challenge (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client))))) (enc auth authk (hash appid challenge (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client)))) (invk authk)) (hash (hash pms-0 cr-0 sr-0) &quot;client_write&quot;))</title>
+   <circle cx='139.920' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(enc username appid challenge (hash (hash pms-0 cr-0 sr-0) &quot;server_write&quot;))</title>
+   <circle style='fill: blue;' cx='139.920' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash pms-0 &quot;server finished&quot; (hash cr-0 sr-0 (cat server-0 (pubk server-0) (enc (hash server-0 (pubk server-0)) (privk ca-0))) (enc pms-0 (pubk server-0)) (enc (hash pms-0 &quot;client finished&quot; (hash cr-0 sr-0 (cat server-0 (pubk server-0) (enc (hash server-0 (pubk server-0)) (privk ca-0))) (enc pms-0 (pubk server-0)))) (hash (hash pms-0 cr-0 sr-0) &quot;client_write&quot;)))) (hash (hash pms-0 cr-0 sr-0) &quot;server_write&quot;))</title>
+   <circle style='fill: blue;' cx='139.920' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc pms-0 (pubk server-0)) (enc (hash pms-0 &quot;client finished&quot; (hash cr-0 sr-0 (cat server-0 (pubk server-0) (enc (hash server-0 (pubk server-0)) (privk ca-0))) (enc pms-0 (pubk server-0)))) (hash (hash pms-0 cr-0 sr-0) &quot;client_write&quot;)))</title>
+   <circle cx='139.920' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat sr-0 server-0 (pubk server-0) (enc (hash server-0 (pubk server-0)) (privk ca-0)))</title>
+   <circle style='fill: blue;' cx='139.920' cy='189.960' r='6.000'/></g>
+  <g><title>cr-0</title><circle cx='139.920' cy='114.960' r='6.000'/>
+   </g>
+  <g>
+   <title>(enc (hash &quot;key handle&quot; (invk authk) username) (cat auth authk (hash appid challenge (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client))))) (enc auth authk (hash appid challenge (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client)))) (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;))</title>
+   <circle style='fill: blue;' cx='39.960' cy='489.960' r='6.000'/></g>
+  <path
+   d='M 39.960 414.960 Q 86.940 414.960 133.920 414.960'
+   style='stroke-dasharray: 6.000,2.400; stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc username appid challenge (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash pms &quot;server finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))) (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle cx='39.960' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat sr server (pubk server) (enc (hash server (pubk server)) (privk ca)))</title>
+   <circle cx='39.960' cy='189.960' r='6.000'/></g>
+  <g><title>cr</title>
+   <circle style='fill: blue;' cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((cr cr-0) (sr sr-0) (pms pms-0) (challenge challenge) (authk authk) (client client) (username username) (auth auth) (server server-0) (ca ca-0) (appid appid))</title>
+   <text
+    x='139.920' y='77.460'
+    style='text-anchor: middle;'>client-reg</text></g>
+  <g>
+   <title>((cr cr) (sr sr) (pms pms) (challenge challenge) (authk authk) (client client) (username username) (auth auth) (server server) (ca ca) (appid appid))</title>
+   <text
+    x='39.960' y='77.460' style='text-anchor: middle;'>server-reg</text>
+   </g>
+  <text
+   x='89.940' y='39.960'
+   style='text-anchor: middle;'>uaf-unbound-tls12 35</text></svg></div>
+
+<pre>(defskeleton uaf-unbound-tls12
+  (vars (sr cr cr-0 sr-0 random32) (pms pms-0 random48) (challenge text)
+    (authk akey)
+    (server ca username client auth server-0 ca-0 appid name))
+  (defstrand server-reg 6 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (authk authk) (client client)
+    (username username) (auth auth) (server server) (ca ca)
+    (appid appid))
+  (defstrand client-reg 6 (cr cr-0) (sr sr-0) (pms pms-0)
+    (challenge challenge) (authk authk) (client client)
+    (username username) (auth auth) (server server-0) (ca ca-0)
+    (appid appid))
+  (precedes ((0 4) (1 4)) ((1 5) (0 5)))
+  (non-orig (invk authk) (privk server) (privk ca) (privk client))
+  (uniq-orig sr challenge)
+  (operation encryption-test (displaced 2 1 client-reg 6)
+    (enc auth-0 authk
+      (hash appid challenge
+        (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+          (enc (pubk client) (privk client)))) (invk authk)) (0 5))
+  (traces
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (send
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc username appid challenge
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc (hash &quot;key handle&quot; (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) &quot;client_write&quot;))))
+    ((send cr-0)
+      (recv
+        (cat sr-0 server-0 (pubk server-0)
+          (enc (hash server-0 (pubk server-0)) (privk ca-0))))
+      (send
+        (cat (enc pms-0 (pubk server-0))
+          (enc
+            (hash pms-0 &quot;client finished&quot;
+              (hash cr-0 sr-0
+                (cat server-0 (pubk server-0)
+                  (enc (hash server-0 (pubk server-0)) (privk ca-0)))
+                (enc pms-0 (pubk server-0))))
+            (hash (hash pms-0 cr-0 sr-0) &quot;client_write&quot;))))
+      (recv
+        (enc
+          (hash pms-0 &quot;server finished&quot;
+            (hash cr-0 sr-0
+              (cat server-0 (pubk server-0)
+                (enc (hash server-0 (pubk server-0)) (privk ca-0)))
+              (enc pms-0 (pubk server-0))
+              (enc
+                (hash pms-0 &quot;client finished&quot;
+                  (hash cr-0 sr-0
+                    (cat server-0 (pubk server-0)
+                      (enc (hash server-0 (pubk server-0))
+                        (privk ca-0))) (enc pms-0 (pubk server-0))))
+                (hash (hash pms-0 cr-0 sr-0) &quot;client_write&quot;))))
+          (hash (hash pms-0 cr-0 sr-0) &quot;server_write&quot;)))
+      (recv
+        (enc username appid challenge
+          (hash (hash pms-0 cr-0 sr-0) &quot;server_write&quot;)))
+      (send
+        (enc (hash &quot;key handle&quot; (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms-0 cr-0 sr-0) &quot;client_write&quot;)))))
+  (label 35)
+  (parent 30)
+  (realized)
+  (shape)
+  (satisfies
+    (no (p &quot;client-reg&quot; &quot;server&quot; z-0 server) (sr sr)
+      (challenge challenge) (client client) (server server) (ca ca)
+      (appid appid) (authk authk) (z 0)))
+  (maps
+    ((0)
+      ((sr sr) (challenge challenge) (client client) (server server)
+        (ca ca) (appid appid) (authk authk) (username username)
+        (auth auth) (cr cr) (pms pms))))
+  (origs (challenge (0 4)) (sr (0 1))))</pre>
+
+<p id="k38">Item <a href="#t30">38</a>, Parent: <a href="#k30">30</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='279.840pt' height='529.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 279.840 529.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='239.880' y1='114.960' x2='239.880' y2='489.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <line
+   x1='139.920' y1='114.960' x2='139.920' y2='489.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='489.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <path
+   d='M 239.880 489.960 Q 142.920 452.460 45.960 489.960'
+   style='stroke-dasharray: 6.000,2.400; stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc (hash &quot;key handle&quot; (invk authk) username-0) (cat auth-0 authk (hash appid challenge (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client))))) (enc auth-0 authk (hash appid challenge (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client)))) (invk authk)) (hash (hash pms-1 cr-1 sr-1) &quot;client_write&quot;))</title>
+   <circle cx='239.880' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(enc username-0 appid challenge (hash (hash pms-1 cr-1 sr-1) &quot;server_write&quot;))</title>
+   <circle style='fill: blue;' cx='239.880' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash pms-1 &quot;server finished&quot; (hash cr-1 sr-1 (cat server-1 (pubk server-1) (enc (hash server-1 (pubk server-1)) (privk ca-1))) (enc pms-1 (pubk server-1)) (enc (hash pms-1 &quot;client finished&quot; (hash cr-1 sr-1 (cat server-1 (pubk server-1) (enc (hash server-1 (pubk server-1)) (privk ca-1))) (enc pms-1 (pubk server-1)))) (hash (hash pms-1 cr-1 sr-1) &quot;client_write&quot;)))) (hash (hash pms-1 cr-1 sr-1) &quot;server_write&quot;))</title>
+   <circle style='fill: blue;' cx='239.880' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc pms-1 (pubk server-1)) (enc (hash pms-1 &quot;client finished&quot; (hash cr-1 sr-1 (cat server-1 (pubk server-1) (enc (hash server-1 (pubk server-1)) (privk ca-1))) (enc pms-1 (pubk server-1)))) (hash (hash pms-1 cr-1 sr-1) &quot;client_write&quot;)))</title>
+   <circle cx='239.880' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat sr-1 server-1 (pubk server-1) (enc (hash server-1 (pubk server-1)) (privk ca-1)))</title>
+   <circle style='fill: blue;' cx='239.880' cy='189.960' r='6.000'/></g>
+  <g><title>cr-1</title><circle cx='239.880' cy='114.960' r='6.000'/>
+   </g>
+  <path
+   d='M 139.920 489.960 Q 92.940 489.960 45.960 489.960'
+   style='stroke-dasharray: 6.000,2.400; stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc (hash &quot;key handle&quot; (invk authk) username) (cat auth authk (hash appid-0 challenge-0 (hash &quot;uaf_token_binding&quot; challenge-0 (pubk client-0) (enc (pubk client-0) (privk client-0))))) (enc auth authk (hash appid-0 challenge-0 (hash &quot;uaf_token_binding&quot; challenge-0 (pubk client-0) (enc (pubk client-0) (privk client-0)))) (invk authk)) (hash (hash pms-0 cr-0 sr-0) &quot;client_write&quot;))</title>
+   <circle cx='139.920' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(enc username appid-0 challenge-0 (hash (hash pms-0 cr-0 sr-0) &quot;server_write&quot;))</title>
+   <circle style='fill: blue;' cx='139.920' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash pms-0 &quot;server finished&quot; (hash cr-0 sr-0 (cat server-0 (pubk server-0) (enc (hash server-0 (pubk server-0)) (privk ca-0))) (enc pms-0 (pubk server-0)) (enc (hash pms-0 &quot;client finished&quot; (hash cr-0 sr-0 (cat server-0 (pubk server-0) (enc (hash server-0 (pubk server-0)) (privk ca-0))) (enc pms-0 (pubk server-0)))) (hash (hash pms-0 cr-0 sr-0) &quot;client_write&quot;)))) (hash (hash pms-0 cr-0 sr-0) &quot;server_write&quot;))</title>
+   <circle style='fill: blue;' cx='139.920' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc pms-0 (pubk server-0)) (enc (hash pms-0 &quot;client finished&quot; (hash cr-0 sr-0 (cat server-0 (pubk server-0) (enc (hash server-0 (pubk server-0)) (privk ca-0))) (enc pms-0 (pubk server-0)))) (hash (hash pms-0 cr-0 sr-0) &quot;client_write&quot;)))</title>
+   <circle cx='139.920' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat sr-0 server-0 (pubk server-0) (enc (hash server-0 (pubk server-0)) (privk ca-0)))</title>
+   <circle style='fill: blue;' cx='139.920' cy='189.960' r='6.000'/></g>
+  <g><title>cr-0</title><circle cx='139.920' cy='114.960' r='6.000'/>
+   </g>
+  <g>
+   <title>(enc (hash &quot;key handle&quot; (invk authk) username) (cat auth-0 authk (hash appid challenge (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client))))) (enc auth-0 authk (hash appid challenge (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client)))) (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;))</title>
+   <circle style='fill: blue;' cx='39.960' cy='489.960' r='6.000'/></g>
+  <path
+   d='M 39.960 414.960 Q 136.920 377.460 233.880 414.960'
+   style='stroke-dasharray: 6.000,2.400; stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc username appid challenge (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash pms &quot;server finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))) (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle cx='39.960' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat sr server (pubk server) (enc (hash server (pubk server)) (privk ca)))</title>
+   <circle cx='39.960' cy='189.960' r='6.000'/></g>
+  <g><title>cr</title>
+   <circle style='fill: blue;' cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((cr cr-1) (sr sr-1) (pms pms-1) (challenge challenge) (authk authk) (client client) (username username-0) (auth auth-0) (server server-1) (ca ca-1) (appid appid))</title>
+   <text
+    x='239.880' y='77.460'
+    style='text-anchor: middle;'>client-reg</text></g>
+  <g>
+   <title>((cr cr-0) (sr sr-0) (pms pms-0) (challenge challenge-0) (authk authk) (client client-0) (username username) (auth auth) (server server-0) (ca ca-0) (appid appid-0))</title>
+   <text
+    x='139.920' y='77.460'
+    style='text-anchor: middle;'>client-reg</text></g>
+  <g>
+   <title>((cr cr) (sr sr) (pms pms) (challenge challenge) (authk authk) (client client) (username username) (auth auth-0) (server server) (ca ca) (appid appid))</title>
+   <text
+    x='39.960' y='77.460' style='text-anchor: middle;'>server-reg</text>
+   </g>
+  <text
+   x='139.920' y='39.960'
+   style='text-anchor: middle;'>uaf-unbound-tls12 38</text></svg></div>
+
+<pre>(defskeleton uaf-unbound-tls12
+  (vars (sr cr cr-0 sr-0 cr-1 sr-1 random32) (pms pms-0 pms-1 random48)
+    (challenge challenge-0 text) (authk akey)
+    (client server ca appid username client-0 auth server-0 ca-0 appid-0
+      username-0 auth-0 server-1 ca-1 name))
+  (defstrand server-reg 6 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (authk authk) (client client)
+    (username username) (auth auth-0) (server server) (ca ca)
+    (appid appid))
+  (defstrand client-reg 6 (cr cr-0) (sr sr-0) (pms pms-0)
+    (challenge challenge-0) (authk authk) (client client-0)
+    (username username) (auth auth) (server server-0) (ca ca-0)
+    (appid appid-0))
+  (defstrand client-reg 6 (cr cr-1) (sr sr-1) (pms pms-1)
+    (challenge challenge) (authk authk) (client client)
+    (username username-0) (auth auth-0) (server server-1) (ca ca-1)
+    (appid appid))
+  (precedes ((0 4) (2 4)) ((1 5) (0 5)) ((2 5) (0 5)))
+  (non-orig (invk authk) (privk client) (privk server) (privk ca))
+  (uniq-orig sr challenge)
+  (operation encryption-test (displaced 3 2 client-reg 6)
+    (enc auth-1 authk-0
+      (hash appid challenge
+        (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+          (enc (pubk client) (privk client)))) (invk authk-0)) (0 5))
+  (traces
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (send
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc username appid challenge
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc (hash &quot;key handle&quot; (invk authk) username)
+          (cat auth-0 authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth-0 authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) &quot;client_write&quot;))))
+    ((send cr-0)
+      (recv
+        (cat sr-0 server-0 (pubk server-0)
+          (enc (hash server-0 (pubk server-0)) (privk ca-0))))
+      (send
+        (cat (enc pms-0 (pubk server-0))
+          (enc
+            (hash pms-0 &quot;client finished&quot;
+              (hash cr-0 sr-0
+                (cat server-0 (pubk server-0)
+                  (enc (hash server-0 (pubk server-0)) (privk ca-0)))
+                (enc pms-0 (pubk server-0))))
+            (hash (hash pms-0 cr-0 sr-0) &quot;client_write&quot;))))
+      (recv
+        (enc
+          (hash pms-0 &quot;server finished&quot;
+            (hash cr-0 sr-0
+              (cat server-0 (pubk server-0)
+                (enc (hash server-0 (pubk server-0)) (privk ca-0)))
+              (enc pms-0 (pubk server-0))
+              (enc
+                (hash pms-0 &quot;client finished&quot;
+                  (hash cr-0 sr-0
+                    (cat server-0 (pubk server-0)
+                      (enc (hash server-0 (pubk server-0))
+                        (privk ca-0))) (enc pms-0 (pubk server-0))))
+                (hash (hash pms-0 cr-0 sr-0) &quot;client_write&quot;))))
+          (hash (hash pms-0 cr-0 sr-0) &quot;server_write&quot;)))
+      (recv
+        (enc username appid-0 challenge-0
+          (hash (hash pms-0 cr-0 sr-0) &quot;server_write&quot;)))
+      (send
+        (enc (hash &quot;key handle&quot; (invk authk) username)
+          (cat auth authk
+            (hash appid-0 challenge-0
+              (hash &quot;uaf_token_binding&quot; challenge-0 (pubk client-0)
+                (enc (pubk client-0) (privk client-0)))))
+          (enc auth authk
+            (hash appid-0 challenge-0
+              (hash &quot;uaf_token_binding&quot; challenge-0 (pubk client-0)
+                (enc (pubk client-0) (privk client-0)))) (invk authk))
+          (hash (hash pms-0 cr-0 sr-0) &quot;client_write&quot;))))
+    ((send cr-1)
+      (recv
+        (cat sr-1 server-1 (pubk server-1)
+          (enc (hash server-1 (pubk server-1)) (privk ca-1))))
+      (send
+        (cat (enc pms-1 (pubk server-1))
+          (enc
+            (hash pms-1 &quot;client finished&quot;
+              (hash cr-1 sr-1
+                (cat server-1 (pubk server-1)
+                  (enc (hash server-1 (pubk server-1)) (privk ca-1)))
+                (enc pms-1 (pubk server-1))))
+            (hash (hash pms-1 cr-1 sr-1) &quot;client_write&quot;))))
+      (recv
+        (enc
+          (hash pms-1 &quot;server finished&quot;
+            (hash cr-1 sr-1
+              (cat server-1 (pubk server-1)
+                (enc (hash server-1 (pubk server-1)) (privk ca-1)))
+              (enc pms-1 (pubk server-1))
+              (enc
+                (hash pms-1 &quot;client finished&quot;
+                  (hash cr-1 sr-1
+                    (cat server-1 (pubk server-1)
+                      (enc (hash server-1 (pubk server-1))
+                        (privk ca-1))) (enc pms-1 (pubk server-1))))
+                (hash (hash pms-1 cr-1 sr-1) &quot;client_write&quot;))))
+          (hash (hash pms-1 cr-1 sr-1) &quot;server_write&quot;)))
+      (recv
+        (enc username-0 appid challenge
+          (hash (hash pms-1 cr-1 sr-1) &quot;server_write&quot;)))
+      (send
+        (enc (hash &quot;key handle&quot; (invk authk) username-0)
+          (cat auth-0 authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth-0 authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms-1 cr-1 sr-1) &quot;client_write&quot;)))))
+  (label 38)
+  (parent 30)
+  (realized)
+  (shape)
+  (satisfies
+    (no (p &quot;client-reg&quot; &quot;challenge&quot; z-0 challenge) (sr sr)
+      (challenge challenge) (client client) (server server) (ca ca)
+      (appid appid) (authk authk) (z 0)))
+  (maps
+    ((0)
+      ((sr sr) (challenge challenge) (client client) (server server)
+        (ca ca) (appid appid) (authk authk) (username username)
+        (auth auth-0) (cr cr) (pms pms))))
+  (origs (challenge (0 4)) (sr (0 1))))</pre>
+
+<p id="t47">Tree <a href="#top">47</a>, POV <a href="#k47">47</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='129.840pt' height='79.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 129.840 79.920' font-size='12.000'>
+  <text
+   x='89.880' y='26.040'
+   style='font-weight: bold; text-anchor: middle; fill: blue;'
+   onclick='window.open(&quot;#k50&quot;, &quot;_self&quot;)'>50</text>
+  <line
+   x1='39.960' y1='39.960' x2='89.880' y2='39.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <text
+   x='39.960' y='26.040' style='text-anchor: middle; fill: black;'
+   onclick='window.open(&quot;#k47&quot;, &quot;_self&quot;)'>47</text>
+  </svg></div>
+
+<pre>(defprotocol uaf-unbound-tls12 basic
+  (defrole client-reg
+    (vars (client username auth server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (recv
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc username appid challenge
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc (hash &quot;key handle&quot; (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) &quot;client_write&quot;)))))
+  (defrole client-auth
+    (vars (client server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (recv
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc appid challenge (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc
+          (hash appid
+            (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;)))))
+  (defrole server-reg
+    (vars (client username auth server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (send
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc username appid challenge
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc (hash &quot;key handle&quot; (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) &quot;client_write&quot;)))))
+  (defrole server-auth
+    (vars (client server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (send
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc appid challenge (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc
+          (hash appid
+            (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;)))))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random32 atom) (random48 atom)))</pre>
+
+<p id="k47">Item <a href="#t47">47</a>, Child: <a href="#k50">50</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='529.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 529.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='489.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g>
+   <title>(enc (hash appid (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client))) challenge) (enc (hash appid (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client))) challenge) (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;))</title>
+   <circle style='fill: red;' cx='39.960' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(enc appid challenge (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash pms &quot;server finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))) (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle cx='39.960' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat sr server (pubk server) (enc (hash server (pubk server)) (privk ca)))</title>
+   <circle cx='39.960' cy='189.960' r='6.000'/></g>
+  <g><title>cr</title>
+   <circle style='fill: blue;' cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((cr cr) (sr sr) (pms pms) (challenge challenge) (authk authk) (client client) (server server) (ca ca) (appid appid))</title>
+   <text
+    x='39.960' y='77.460'
+    style='text-anchor: middle;'>server-auth</text></g>
+  <text
+   x='39.960' y='39.960'
+   style='text-anchor: middle;'>uaf-unbound-tls12 47</text></svg></div>
+
+<pre>(defskeleton uaf-unbound-tls12
+  (vars (sr cr random32) (pms random48) (challenge text) (authk akey)
+    (client server ca appid name))
+  (defstrand server-auth 6 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (authk authk) (client client) (server server)
+    (ca ca) (appid appid))
+  (non-orig (invk authk) (privk client) (privk server) (privk ca))
+  (uniq-orig sr challenge)
+  (goals
+    (forall
+      ((sr random32) (challenge text) (client server ca appid name)
+        (authk akey) (z strd))
+      (implies
+        (and (p &quot;server-auth&quot; z 6) (p &quot;server-auth&quot; &quot;sr&quot; z sr)
+          (p &quot;server-auth&quot; &quot;challenge&quot; z challenge)
+          (p &quot;server-auth&quot; &quot;authk&quot; z authk)
+          (p &quot;server-auth&quot; &quot;server&quot; z server)
+          (p &quot;server-auth&quot; &quot;ca&quot; z ca) (p &quot;server-auth&quot; &quot;appid&quot; z appid)
+          (p &quot;server-auth&quot; &quot;client&quot; z client) (non (privk client))
+          (non (invk authk)) (non (privk server)) (non (privk ca))
+          (uniq-at challenge z 4) (uniq-at sr z 1))
+        (exists ((z-0 strd))
+          (and (p &quot;client-auth&quot; z-0 6)
+            (p &quot;client-auth&quot; &quot;challenge&quot; z-0 challenge)
+            (p &quot;client-auth&quot; &quot;server&quot; z-0 server)
+            (p &quot;client-auth&quot; &quot;appid&quot; z-0 appid))))))
+  (traces
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (send
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc appid challenge (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc
+          (hash appid
+            (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;)))))
+  (label 47)
+  (unrealized (0 5))
+  (origs (challenge (0 4)) (sr (0 1)))
+  (comment &quot;2 in cohort - 2 not yet seen&quot;))</pre>
+
+<p id="k50">Item <a href="#t47">50</a>, Parent: <a href="#k47">47</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='179.880pt' height='529.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 179.880 529.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='139.920' y1='114.960' x2='139.920' y2='489.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='489.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <path
+   d='M 139.920 489.960 Q 92.940 489.960 45.960 489.960'
+   style='stroke-dasharray: 6.000,2.400; stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc (hash appid (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client))) challenge) (enc (hash appid (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client))) challenge) (invk authk)) (hash (hash pms-0 cr-0 sr-0) &quot;client_write&quot;))</title>
+   <circle cx='139.920' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(enc appid challenge (hash (hash pms-0 cr-0 sr-0) &quot;server_write&quot;))</title>
+   <circle style='fill: blue;' cx='139.920' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash pms-0 &quot;server finished&quot; (hash cr-0 sr-0 (cat server-0 (pubk server-0) (enc (hash server-0 (pubk server-0)) (privk ca-0))) (enc pms-0 (pubk server-0)) (enc (hash pms-0 &quot;client finished&quot; (hash cr-0 sr-0 (cat server-0 (pubk server-0) (enc (hash server-0 (pubk server-0)) (privk ca-0))) (enc pms-0 (pubk server-0)))) (hash (hash pms-0 cr-0 sr-0) &quot;client_write&quot;)))) (hash (hash pms-0 cr-0 sr-0) &quot;server_write&quot;))</title>
+   <circle style='fill: blue;' cx='139.920' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc pms-0 (pubk server-0)) (enc (hash pms-0 &quot;client finished&quot; (hash cr-0 sr-0 (cat server-0 (pubk server-0) (enc (hash server-0 (pubk server-0)) (privk ca-0))) (enc pms-0 (pubk server-0)))) (hash (hash pms-0 cr-0 sr-0) &quot;client_write&quot;)))</title>
+   <circle cx='139.920' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat sr-0 server-0 (pubk server-0) (enc (hash server-0 (pubk server-0)) (privk ca-0)))</title>
+   <circle style='fill: blue;' cx='139.920' cy='189.960' r='6.000'/></g>
+  <g><title>cr-0</title><circle cx='139.920' cy='114.960' r='6.000'/>
+   </g>
+  <g>
+   <title>(enc (hash appid (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client))) challenge) (enc (hash appid (hash &quot;uaf_token_binding&quot; challenge (pubk client) (enc (pubk client) (privk client))) challenge) (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;))</title>
+   <circle style='fill: blue;' cx='39.960' cy='489.960' r='6.000'/></g>
+  <path
+   d='M 39.960 414.960 Q 86.940 414.960 133.920 414.960'
+   style='stroke-dasharray: 6.000,2.400; stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(enc appid challenge (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(enc (hash pms &quot;server finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))) (hash (hash pms cr sr) &quot;server_write&quot;))</title>
+   <circle cx='39.960' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc pms (pubk server)) (enc (hash pms &quot;client finished&quot; (hash cr sr (cat server (pubk server) (enc (hash server (pubk server)) (privk ca))) (enc pms (pubk server)))) (hash (hash pms cr sr) &quot;client_write&quot;)))</title>
+   <circle style='fill: blue;' cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(cat sr server (pubk server) (enc (hash server (pubk server)) (privk ca)))</title>
+   <circle cx='39.960' cy='189.960' r='6.000'/></g>
+  <g><title>cr</title>
+   <circle style='fill: blue;' cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((cr cr-0) (sr sr-0) (pms pms-0) (challenge challenge) (authk authk) (client client) (server server-0) (ca ca-0) (appid appid))</title>
+   <text
+    x='139.920' y='77.460'
+    style='text-anchor: middle;'>client-auth</text></g>
+  <g>
+   <title>((cr cr) (sr sr) (pms pms) (challenge challenge) (authk authk) (client client) (server server) (ca ca) (appid appid))</title>
+   <text
+    x='39.960' y='77.460'
+    style='text-anchor: middle;'>server-auth</text></g>
+  <text
+   x='89.940' y='39.960'
+   style='text-anchor: middle;'>uaf-unbound-tls12 50</text></svg></div>
+
+<pre>(defskeleton uaf-unbound-tls12
+  (vars (sr cr cr-0 sr-0 random32) (pms pms-0 random48) (challenge text)
+    (authk akey) (client server ca appid server-0 ca-0 name))
+  (defstrand server-auth 6 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (authk authk) (client client) (server server)
+    (ca ca) (appid appid))
+  (defstrand client-auth 6 (cr cr-0) (sr sr-0) (pms pms-0)
+    (challenge challenge) (authk authk) (client client)
+    (server server-0) (ca ca-0) (appid appid))
+  (precedes ((0 4) (1 4)) ((1 5) (0 5)))
+  (non-orig (invk authk) (privk client) (privk server) (privk ca))
+  (uniq-orig sr challenge)
+  (operation encryption-test (displaced 2 1 client-auth 6)
+    (enc
+      (hash appid
+        (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+          (enc (pubk client) (privk client))) challenge) (invk authk-0))
+    (0 5))
+  (traces
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms &quot;client finished&quot;
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) &quot;client_write&quot;))))
+      (send
+        (enc
+          (hash pms &quot;server finished&quot;
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms &quot;client finished&quot;
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) &quot;client_write&quot;))))
+          (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (send
+        (enc appid challenge (hash (hash pms cr sr) &quot;server_write&quot;)))
+      (recv
+        (enc
+          (hash appid
+            (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) &quot;client_write&quot;))))
+    ((send cr-0)
+      (recv
+        (cat sr-0 server-0 (pubk server-0)
+          (enc (hash server-0 (pubk server-0)) (privk ca-0))))
+      (send
+        (cat (enc pms-0 (pubk server-0))
+          (enc
+            (hash pms-0 &quot;client finished&quot;
+              (hash cr-0 sr-0
+                (cat server-0 (pubk server-0)
+                  (enc (hash server-0 (pubk server-0)) (privk ca-0)))
+                (enc pms-0 (pubk server-0))))
+            (hash (hash pms-0 cr-0 sr-0) &quot;client_write&quot;))))
+      (recv
+        (enc
+          (hash pms-0 &quot;server finished&quot;
+            (hash cr-0 sr-0
+              (cat server-0 (pubk server-0)
+                (enc (hash server-0 (pubk server-0)) (privk ca-0)))
+              (enc pms-0 (pubk server-0))
+              (enc
+                (hash pms-0 &quot;client finished&quot;
+                  (hash cr-0 sr-0
+                    (cat server-0 (pubk server-0)
+                      (enc (hash server-0 (pubk server-0))
+                        (privk ca-0))) (enc pms-0 (pubk server-0))))
+                (hash (hash pms-0 cr-0 sr-0) &quot;client_write&quot;))))
+          (hash (hash pms-0 cr-0 sr-0) &quot;server_write&quot;)))
+      (recv
+        (enc appid challenge
+          (hash (hash pms-0 cr-0 sr-0) &quot;server_write&quot;)))
+      (send
+        (enc
+          (hash appid
+            (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash &quot;uaf_token_binding&quot; challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk))
+          (hash (hash pms-0 cr-0 sr-0) &quot;client_write&quot;)))))
+  (label 50)
+  (parent 47)
+  (realized)
+  (shape)
+  (satisfies
+    (no (p &quot;client-auth&quot; &quot;server&quot; z-0 server) (sr sr)
+      (challenge challenge) (client client) (server server) (ca ca)
+      (appid appid) (authk authk) (z 0)))
+  (maps
+    ((0)
+      ((sr sr) (challenge challenge) (client client) (server server)
+        (ca ca) (appid appid) (authk authk) (cr cr) (pms pms))))
+  (origs (challenge (0 4)) (sr (0 1))))</pre>
+
+</body>
+</html>

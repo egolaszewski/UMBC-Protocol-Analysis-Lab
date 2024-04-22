@@ -1,0 +1,2194 @@
+(herald "Basic password-based authentication over TLS 1.2")
+
+(comment "CPSA 4.4.2")
+(comment "All input read from baseline-nouaf-tls12.scm")
+
+(defprotocol baseline-nouaf-tls12 basic
+  (defrole client
+    (vars (username server ca name) (cr sr random32) (pms random48)
+      (pw password))
+    (trace (send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write")))))
+  (defrole server
+    (vars (username server ca name) (cr sr random32) (pms random48)
+      (pw password))
+    (trace (recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc username pw (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "auth success" (hash (hash pms cr sr) "server_write")))))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random32 atom) (random48 atom) (password atom)))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw password) (cr sr random32) (pms random48)
+    (server ca username name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write")))))
+  (label 0)
+  (unrealized (0 1) (0 3) (0 5))
+  (origs (cr (0 0)) (pms (0 2)))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw password) (cr sr cr-0 sr-0 random32) (pms random48)
+    (server ca username name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 2 (cr cr-0) (sr sr-0) (server server) (ca ca))
+  (precedes ((1 1) (0 1)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test (added-strand server 2)
+    (enc (hash server (pubk server)) (privk ca)) (0 1))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr-0)
+      (send
+        (cat sr-0 server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))))
+  (label 1)
+  (parent 0)
+  (unrealized (0 3) (0 5))
+  (comment "3 in cohort - 3 not yet seen"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw password) (cr sr random32) (pms random48)
+    (server ca username name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 4 (cr cr) (sr sr) (pms pms) (server server) (ca ca))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((1 1) (0 1)) ((1 3) (0 3)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test (displaced 1 2 server 4)
+    (enc
+      (hash pms "server finished"
+        (hash cr sr
+          (cat server (pubk server)
+            (enc (hash server (pubk server)) (privk ca)))
+          (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (hash (hash pms cr sr) "server_write")) (0 3))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))))
+  (label 2)
+  (parent 1)
+  (unrealized (0 5))
+  (comment "2 in cohort - 2 not yet seen"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw password) (cr sr cr-0 sr-0 random32) (pms random48)
+    (server ca username name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 2 (cr cr-0) (sr sr-0) (server server) (ca ca))
+  (defstrand server 4 (cr cr) (sr sr) (pms pms) (server server) (ca ca))
+  (precedes ((0 0) (2 0)) ((0 2) (2 2)) ((1 1) (0 1)) ((2 1) (0 1))
+    ((2 3) (0 3)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test (added-strand server 4)
+    (enc
+      (hash pms "server finished"
+        (hash cr sr
+          (cat server (pubk server)
+            (enc (hash server (pubk server)) (privk ca)))
+          (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (hash (hash pms cr sr) "server_write")) (0 3))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr-0)
+      (send
+        (cat sr-0 server (pubk server)
+          (enc (hash server (pubk server)) (privk ca)))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))))
+  (label 3)
+  (parent 1)
+  (unrealized (0 5))
+  (comment "2 in cohort - 2 not yet seen"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw password) (cr sr cr-0 sr-0 random32) (pms random48)
+    (server ca username name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 2 (cr cr-0) (sr sr-0) (server server) (ca ca))
+  (deflistener (hash (hash pms cr sr) "server_write"))
+  (precedes ((1 1) (0 1)) ((2 1) (0 3)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test
+    (added-listener (hash (hash pms cr sr) "server_write"))
+    (enc
+      (hash pms "server finished"
+        (hash cr sr
+          (cat server (pubk server)
+            (enc (hash server (pubk server)) (privk ca)))
+          (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (hash (hash pms cr sr) "server_write")) (0 3))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr-0)
+      (send
+        (cat sr-0 server (pubk server)
+          (enc (hash server (pubk server)) (privk ca)))))
+    ((recv (hash (hash pms cr sr) "server_write"))
+      (send (hash (hash pms cr sr) "server_write"))))
+  (label 4)
+  (parent 1)
+  (unrealized (0 3) (2 0))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw pw-0 password) (cr sr random32) (pms random48)
+    (username username-0 server ca name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 6 (pw pw-0) (cr cr) (sr sr) (pms pms)
+    (username username-0) (server server) (ca ca))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((1 1) (0 1)) ((1 3) (0 3))
+    ((1 5) (0 5)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test (displaced 1 2 server 6)
+    (enc "auth success" (hash (hash pms cr sr) "server_write")) (0 5))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc username-0 pw-0 (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "auth success" (hash (hash pms cr sr) "server_write")))))
+  (label 5)
+  (parent 2)
+  (unrealized (1 4))
+  (comment "2 in cohort - 2 not yet seen"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw password) (cr sr random32) (pms random48)
+    (server ca username name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 4 (cr cr) (sr sr) (pms pms) (server server) (ca ca))
+  (deflistener (hash (hash pms cr sr) "server_write"))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((1 1) (0 1)) ((1 3) (0 3))
+    ((2 1) (0 5)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test
+    (added-listener (hash (hash pms cr sr) "server_write"))
+    (enc "auth success" (hash (hash pms cr sr) "server_write")) (0 5))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write"))))
+    ((recv (hash (hash pms cr sr) "server_write"))
+      (send (hash (hash pms cr sr) "server_write"))))
+  (label 6)
+  (parent 2)
+  (unrealized (2 0))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw pw-0 password) (cr sr cr-0 sr-0 random32) (pms random48)
+    (username username-0 server ca name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 2 (cr cr-0) (sr sr-0) (server server) (ca ca))
+  (defstrand server 6 (pw pw-0) (cr cr) (sr sr) (pms pms)
+    (username username-0) (server server) (ca ca))
+  (precedes ((0 0) (2 0)) ((0 2) (2 2)) ((1 1) (0 1)) ((2 1) (0 1))
+    ((2 3) (0 3)) ((2 5) (0 5)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test (displaced 2 3 server 6)
+    (enc "auth success" (hash (hash pms cr sr) "server_write")) (0 5))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr-0)
+      (send
+        (cat sr-0 server (pubk server)
+          (enc (hash server (pubk server)) (privk ca)))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc username-0 pw-0 (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "auth success" (hash (hash pms cr sr) "server_write")))))
+  (label 7)
+  (parent 3)
+  (unrealized (2 4))
+  (comment "2 in cohort - 2 not yet seen"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw password) (cr sr cr-0 sr-0 random32) (pms random48)
+    (server ca username name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 2 (cr cr-0) (sr sr-0) (server server) (ca ca))
+  (defstrand server 4 (cr cr) (sr sr) (pms pms) (server server) (ca ca))
+  (deflistener (hash (hash pms cr sr) "server_write"))
+  (precedes ((0 0) (2 0)) ((0 2) (2 2)) ((1 1) (0 1)) ((2 1) (0 1))
+    ((2 3) (0 3)) ((3 1) (0 5)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test
+    (added-listener (hash (hash pms cr sr) "server_write"))
+    (enc "auth success" (hash (hash pms cr sr) "server_write")) (0 5))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr-0)
+      (send
+        (cat sr-0 server (pubk server)
+          (enc (hash server (pubk server)) (privk ca)))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write"))))
+    ((recv (hash (hash pms cr sr) "server_write"))
+      (send (hash (hash pms cr sr) "server_write"))))
+  (label 8)
+  (parent 3)
+  (unrealized (3 0))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw password) (cr sr cr-0 sr-0 random32) (pms random48)
+    (server ca username name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 2 (cr cr-0) (sr sr-0) (server server) (ca ca))
+  (deflistener (hash (hash pms cr sr) "server_write"))
+  (deflistener (cat (hash pms cr sr) "server_write"))
+  (precedes ((1 1) (0 1)) ((2 1) (0 3)) ((3 1) (2 0)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test
+    (added-listener (cat (hash pms cr sr) "server_write"))
+    (hash (hash pms cr sr) "server_write") (2 0))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr-0)
+      (send
+        (cat sr-0 server (pubk server)
+          (enc (hash server (pubk server)) (privk ca)))))
+    ((recv (hash (hash pms cr sr) "server_write"))
+      (send (hash (hash pms cr sr) "server_write")))
+    ((recv (cat (hash pms cr sr) "server_write"))
+      (send (cat (hash pms cr sr) "server_write"))))
+  (label 9)
+  (parent 4)
+  (unrealized (0 3) (3 0))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw password) (cr sr random32) (pms random48)
+    (username server ca name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((0 4) (1 4)) ((1 1) (0 1))
+    ((1 3) (0 3)) ((1 5) (0 5)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test (displaced 2 0 client 5)
+    (enc username-0 pw-0 (hash (hash pms cr sr) "client_write")) (1 4))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc username pw (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "auth success" (hash (hash pms cr sr) "server_write")))))
+  (label 10)
+  (parent 5)
+  (realized)
+  (shape)
+  (maps
+    ((0)
+      ((server server) (ca ca) (cr cr) (sr sr) (pms pms) (pw pw)
+        (username username))))
+  (origs (cr (0 0)) (pms (0 2)) (sr (1 1))))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw pw-0 password) (cr sr random32) (pms random48)
+    (username username-0 server ca name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 6 (pw pw-0) (cr cr) (sr sr) (pms pms)
+    (username username-0) (server server) (ca ca))
+  (deflistener (hash (hash pms cr sr) "client_write"))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((1 1) (0 1)) ((1 3) (0 3))
+    ((1 5) (0 5)) ((2 1) (1 4)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test
+    (added-listener (hash (hash pms cr sr) "client_write"))
+    (enc username-0 pw-0 (hash (hash pms cr sr) "client_write")) (1 4))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc username-0 pw-0 (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv (hash (hash pms cr sr) "client_write"))
+      (send (hash (hash pms cr sr) "client_write"))))
+  (label 11)
+  (parent 5)
+  (unrealized (2 0))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw password) (cr sr random32) (pms random48)
+    (server ca username name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 4 (cr cr) (sr sr) (pms pms) (server server) (ca ca))
+  (deflistener (hash (hash pms cr sr) "server_write"))
+  (deflistener (cat (hash pms cr sr) "server_write"))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((1 1) (0 1)) ((1 3) (0 3))
+    ((2 1) (0 5)) ((3 1) (2 0)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test
+    (added-listener (cat (hash pms cr sr) "server_write"))
+    (hash (hash pms cr sr) "server_write") (2 0))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write"))))
+    ((recv (hash (hash pms cr sr) "server_write"))
+      (send (hash (hash pms cr sr) "server_write")))
+    ((recv (cat (hash pms cr sr) "server_write"))
+      (send (cat (hash pms cr sr) "server_write"))))
+  (label 12)
+  (parent 6)
+  (unrealized (3 0))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw password) (cr sr cr-0 sr-0 random32) (pms random48)
+    (username server ca name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 2 (cr cr-0) (sr sr-0) (server server) (ca ca))
+  (defstrand server 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (precedes ((0 0) (2 0)) ((0 2) (2 2)) ((0 4) (2 4)) ((1 1) (0 1))
+    ((2 1) (0 1)) ((2 3) (0 3)) ((2 5) (0 5)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test (displaced 3 0 client 5)
+    (enc username-0 pw-0 (hash (hash pms cr sr) "client_write")) (2 4))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr-0)
+      (send
+        (cat sr-0 server (pubk server)
+          (enc (hash server (pubk server)) (privk ca)))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc username pw (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "auth success" (hash (hash pms cr sr) "server_write")))))
+  (label 13)
+  (parent 7)
+  (seen 10)
+  (realized)
+  (comment "1 in cohort - 0 not yet seen"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw pw-0 password) (cr sr cr-0 sr-0 random32) (pms random48)
+    (username username-0 server ca name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 2 (cr cr-0) (sr sr-0) (server server) (ca ca))
+  (defstrand server 6 (pw pw-0) (cr cr) (sr sr) (pms pms)
+    (username username-0) (server server) (ca ca))
+  (deflistener (hash (hash pms cr sr) "client_write"))
+  (precedes ((0 0) (2 0)) ((0 2) (2 2)) ((1 1) (0 1)) ((2 1) (0 1))
+    ((2 3) (0 3)) ((2 5) (0 5)) ((3 1) (2 4)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test
+    (added-listener (hash (hash pms cr sr) "client_write"))
+    (enc username-0 pw-0 (hash (hash pms cr sr) "client_write")) (2 4))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr-0)
+      (send
+        (cat sr-0 server (pubk server)
+          (enc (hash server (pubk server)) (privk ca)))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc username-0 pw-0 (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv (hash (hash pms cr sr) "client_write"))
+      (send (hash (hash pms cr sr) "client_write"))))
+  (label 14)
+  (parent 7)
+  (unrealized (3 0))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw password) (cr sr cr-0 sr-0 random32) (pms random48)
+    (server ca username name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 2 (cr cr-0) (sr sr-0) (server server) (ca ca))
+  (defstrand server 4 (cr cr) (sr sr) (pms pms) (server server) (ca ca))
+  (deflistener (hash (hash pms cr sr) "server_write"))
+  (deflistener (cat (hash pms cr sr) "server_write"))
+  (precedes ((0 0) (2 0)) ((0 2) (2 2)) ((1 1) (0 1)) ((2 1) (0 1))
+    ((2 3) (0 3)) ((3 1) (0 5)) ((4 1) (3 0)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test
+    (added-listener (cat (hash pms cr sr) "server_write"))
+    (hash (hash pms cr sr) "server_write") (3 0))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr-0)
+      (send
+        (cat sr-0 server (pubk server)
+          (enc (hash server (pubk server)) (privk ca)))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write"))))
+    ((recv (hash (hash pms cr sr) "server_write"))
+      (send (hash (hash pms cr sr) "server_write")))
+    ((recv (cat (hash pms cr sr) "server_write"))
+      (send (cat (hash pms cr sr) "server_write"))))
+  (label 15)
+  (parent 8)
+  (unrealized (4 0))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw password) (cr sr cr-0 sr-0 random32) (pms random48)
+    (server ca username name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 2 (cr cr-0) (sr sr-0) (server server) (ca ca))
+  (deflistener (hash (hash pms cr sr) "server_write"))
+  (deflistener (cat (hash pms cr sr) "server_write"))
+  (deflistener (cat pms cr sr))
+  (precedes ((0 2) (4 0)) ((1 1) (0 1)) ((2 1) (0 3)) ((3 1) (2 0))
+    ((4 1) (3 0)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test (added-listener (cat pms cr sr))
+    (hash pms cr sr) (3 0))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr-0)
+      (send
+        (cat sr-0 server (pubk server)
+          (enc (hash server (pubk server)) (privk ca)))))
+    ((recv (hash (hash pms cr sr) "server_write"))
+      (send (hash (hash pms cr sr) "server_write")))
+    ((recv (cat (hash pms cr sr) "server_write"))
+      (send (cat (hash pms cr sr) "server_write")))
+    ((recv (cat pms cr sr)) (send (cat pms cr sr))))
+  (label 16)
+  (parent 9)
+  (unrealized (4 0))
+  (dead)
+  (comment "empty cohort"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw pw-0 password) (cr sr random32) (pms random48)
+    (username username-0 server ca name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 6 (pw pw-0) (cr cr) (sr sr) (pms pms)
+    (username username-0) (server server) (ca ca))
+  (deflistener (hash (hash pms cr sr) "client_write"))
+  (deflistener (cat (hash pms cr sr) "client_write"))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((1 1) (0 1)) ((1 3) (0 3))
+    ((1 5) (0 5)) ((2 1) (1 4)) ((3 1) (2 0)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test
+    (added-listener (cat (hash pms cr sr) "client_write"))
+    (hash (hash pms cr sr) "client_write") (2 0))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc username-0 pw-0 (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv (hash (hash pms cr sr) "client_write"))
+      (send (hash (hash pms cr sr) "client_write")))
+    ((recv (cat (hash pms cr sr) "client_write"))
+      (send (cat (hash pms cr sr) "client_write"))))
+  (label 17)
+  (parent 11)
+  (unrealized (3 0))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw password) (cr sr random32) (pms random48)
+    (server ca username name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 4 (cr cr) (sr sr) (pms pms) (server server) (ca ca))
+  (deflistener (hash (hash pms cr sr) "server_write"))
+  (deflistener (cat (hash pms cr sr) "server_write"))
+  (deflistener (cat pms cr sr))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((0 2) (4 0)) ((1 1) (0 1))
+    ((1 3) (0 3)) ((2 1) (0 5)) ((3 1) (2 0)) ((4 1) (3 0)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test (added-listener (cat pms cr sr))
+    (hash pms cr sr) (3 0))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write"))))
+    ((recv (hash (hash pms cr sr) "server_write"))
+      (send (hash (hash pms cr sr) "server_write")))
+    ((recv (cat (hash pms cr sr) "server_write"))
+      (send (cat (hash pms cr sr) "server_write")))
+    ((recv (cat pms cr sr)) (send (cat pms cr sr))))
+  (label 18)
+  (parent 12)
+  (unrealized (4 0))
+  (dead)
+  (comment "empty cohort"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw pw-0 password) (cr sr cr-0 sr-0 random32) (pms random48)
+    (username username-0 server ca name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 2 (cr cr-0) (sr sr-0) (server server) (ca ca))
+  (defstrand server 6 (pw pw-0) (cr cr) (sr sr) (pms pms)
+    (username username-0) (server server) (ca ca))
+  (deflistener (hash (hash pms cr sr) "client_write"))
+  (deflistener (cat (hash pms cr sr) "client_write"))
+  (precedes ((0 0) (2 0)) ((0 2) (2 2)) ((1 1) (0 1)) ((2 1) (0 1))
+    ((2 3) (0 3)) ((2 5) (0 5)) ((3 1) (2 4)) ((4 1) (3 0)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test
+    (added-listener (cat (hash pms cr sr) "client_write"))
+    (hash (hash pms cr sr) "client_write") (3 0))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr-0)
+      (send
+        (cat sr-0 server (pubk server)
+          (enc (hash server (pubk server)) (privk ca)))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc username-0 pw-0 (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv (hash (hash pms cr sr) "client_write"))
+      (send (hash (hash pms cr sr) "client_write")))
+    ((recv (cat (hash pms cr sr) "client_write"))
+      (send (cat (hash pms cr sr) "client_write"))))
+  (label 19)
+  (parent 14)
+  (unrealized (4 0))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw password) (cr sr cr-0 sr-0 random32) (pms random48)
+    (server ca username name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 2 (cr cr-0) (sr sr-0) (server server) (ca ca))
+  (defstrand server 4 (cr cr) (sr sr) (pms pms) (server server) (ca ca))
+  (deflistener (hash (hash pms cr sr) "server_write"))
+  (deflistener (cat (hash pms cr sr) "server_write"))
+  (deflistener (cat pms cr sr))
+  (precedes ((0 0) (2 0)) ((0 2) (2 2)) ((0 2) (5 0)) ((1 1) (0 1))
+    ((2 1) (0 1)) ((2 3) (0 3)) ((3 1) (0 5)) ((4 1) (3 0))
+    ((5 1) (4 0)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test (added-listener (cat pms cr sr))
+    (hash pms cr sr) (4 0))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr-0)
+      (send
+        (cat sr-0 server (pubk server)
+          (enc (hash server (pubk server)) (privk ca)))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write"))))
+    ((recv (hash (hash pms cr sr) "server_write"))
+      (send (hash (hash pms cr sr) "server_write")))
+    ((recv (cat (hash pms cr sr) "server_write"))
+      (send (cat (hash pms cr sr) "server_write")))
+    ((recv (cat pms cr sr)) (send (cat pms cr sr))))
+  (label 20)
+  (parent 15)
+  (unrealized (5 0))
+  (dead)
+  (comment "empty cohort"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw pw-0 password) (cr sr random32) (pms random48)
+    (username username-0 server ca name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 6 (pw pw-0) (cr cr) (sr sr) (pms pms)
+    (username username-0) (server server) (ca ca))
+  (deflistener (hash (hash pms cr sr) "client_write"))
+  (deflistener (cat (hash pms cr sr) "client_write"))
+  (deflistener (cat pms cr sr))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((0 2) (4 0)) ((1 1) (0 1))
+    ((1 3) (0 3)) ((1 5) (0 5)) ((2 1) (1 4)) ((3 1) (2 0))
+    ((4 1) (3 0)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test (added-listener (cat pms cr sr))
+    (hash pms cr sr) (3 0))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc username-0 pw-0 (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv (hash (hash pms cr sr) "client_write"))
+      (send (hash (hash pms cr sr) "client_write")))
+    ((recv (cat (hash pms cr sr) "client_write"))
+      (send (cat (hash pms cr sr) "client_write")))
+    ((recv (cat pms cr sr)) (send (cat pms cr sr))))
+  (label 21)
+  (parent 17)
+  (unrealized (4 0))
+  (dead)
+  (comment "empty cohort"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw pw-0 password) (cr sr cr-0 sr-0 random32) (pms random48)
+    (username username-0 server ca name))
+  (defstrand client 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand server 2 (cr cr-0) (sr sr-0) (server server) (ca ca))
+  (defstrand server 6 (pw pw-0) (cr cr) (sr sr) (pms pms)
+    (username username-0) (server server) (ca ca))
+  (deflistener (hash (hash pms cr sr) "client_write"))
+  (deflistener (cat (hash pms cr sr) "client_write"))
+  (deflistener (cat pms cr sr))
+  (precedes ((0 0) (2 0)) ((0 2) (2 2)) ((0 2) (5 0)) ((1 1) (0 1))
+    ((2 1) (0 1)) ((2 3) (0 3)) ((2 5) (0 5)) ((3 1) (2 4))
+    ((4 1) (3 0)) ((5 1) (4 0)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig cr sr pms)
+  (operation encryption-test (added-listener (cat pms cr sr))
+    (hash pms cr sr) (4 0))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv cr-0)
+      (send
+        (cat sr-0 server (pubk server)
+          (enc (hash server (pubk server)) (privk ca)))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc username-0 pw-0 (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((recv (hash (hash pms cr sr) "client_write"))
+      (send (hash (hash pms cr sr) "client_write")))
+    ((recv (cat (hash pms cr sr) "client_write"))
+      (send (cat (hash pms cr sr) "client_write")))
+    ((recv (cat pms cr sr)) (send (cat pms cr sr))))
+  (label 22)
+  (parent 19)
+  (unrealized (5 0))
+  (dead)
+  (comment "empty cohort"))
+
+(comment "Nothing left to do")
+
+(defprotocol baseline-nouaf-tls12 basic
+  (defrole client
+    (vars (username server ca name) (cr sr random32) (pms random48)
+      (pw password))
+    (trace (send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send (enc username pw (hash (hash pms cr sr) "client_write")))
+      (recv
+        (enc "auth success" (hash (hash pms cr sr) "server_write")))))
+  (defrole server
+    (vars (username server ca name) (cr sr random32) (pms random48)
+      (pw password))
+    (trace (recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc username pw (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "auth success" (hash (hash pms cr sr) "server_write")))))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random32 atom) (random48 atom) (password atom)))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw password) (sr cr random32) (pms random48)
+    (server ca username name))
+  (defstrand server 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig sr)
+  (traces
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc username pw (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "auth success" (hash (hash pms cr sr) "server_write")))))
+  (label 23)
+  (unrealized (0 4))
+  (origs (sr (0 1)))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton baseline-nouaf-tls12
+  (vars (pw password) (sr cr cr-0 sr-0 random32) (pms pms-0 random48)
+    (server ca username username-0 server-0 ca-0 name))
+  (defstrand server 6 (pw pw) (cr cr) (sr sr) (pms pms)
+    (username username) (server server) (ca ca))
+  (defstrand client 5 (pw pw) (cr cr-0) (sr sr-0) (pms pms-0)
+    (username username-0) (server server-0) (ca ca-0))
+  (precedes ((1 4) (0 4)))
+  (non-orig (privk server) (privk ca))
+  (pen-non-orig pw)
+  (uniq-orig sr)
+  (operation nonce-test (added-strand client 5) pw (0 4))
+  (traces
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv (enc username pw (hash (hash pms cr sr) "client_write")))
+      (send
+        (enc "auth success" (hash (hash pms cr sr) "server_write"))))
+    ((send cr-0)
+      (recv
+        (cat sr-0 server-0 (pubk server-0)
+          (enc (hash server-0 (pubk server-0)) (privk ca-0))))
+      (send
+        (cat (enc pms-0 (pubk server-0))
+          (enc
+            (hash pms-0 "client finished"
+              (hash cr-0 sr-0
+                (cat server-0 (pubk server-0)
+                  (enc (hash server-0 (pubk server-0)) (privk ca-0)))
+                (enc pms-0 (pubk server-0))))
+            (hash (hash pms-0 cr-0 sr-0) "client_write"))))
+      (recv
+        (enc
+          (hash pms-0 "server finished"
+            (hash cr-0 sr-0
+              (cat server-0 (pubk server-0)
+                (enc (hash server-0 (pubk server-0)) (privk ca-0)))
+              (enc pms-0 (pubk server-0))
+              (enc
+                (hash pms-0 "client finished"
+                  (hash cr-0 sr-0
+                    (cat server-0 (pubk server-0)
+                      (enc (hash server-0 (pubk server-0))
+                        (privk ca-0))) (enc pms-0 (pubk server-0))))
+                (hash (hash pms-0 cr-0 sr-0) "client_write"))))
+          (hash (hash pms-0 cr-0 sr-0) "server_write")))
+      (send
+        (enc username-0 pw
+          (hash (hash pms-0 cr-0 sr-0) "client_write")))))
+  (label 24)
+  (parent 23)
+  (realized)
+  (shape)
+  (maps
+    ((0)
+      ((server server) (ca ca) (sr sr) (pw pw) (username username)
+        (cr cr) (pms pms))))
+  (origs (sr (0 1))))
+
+(comment "Nothing left to do")

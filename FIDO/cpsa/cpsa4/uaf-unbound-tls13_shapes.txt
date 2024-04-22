@@ -1,0 +1,3766 @@
+(comment "CPSA 4.4.2")
+(comment "Extracted shapes")
+
+(herald "UAF using TLS1.3 without channel binding.")
+
+(comment "CPSA 4.4.2")
+
+(comment "All input read from uaf-unbound-tls13.scm")
+
+(defprotocol uaf-unbound-tls13 basic
+  (defrole client-reg
+    (vars (username auth server ca appid name) (challenge text)
+      (cr sr random32) (authk spk akey) (x rndx) (y expt))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (recv
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen x))
+  (defrole client-auth
+    (vars (server ca appid name) (challenge text) (cr sr random32)
+      (authk spk akey) (x rndx) (y expt))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (recv
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (send
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen x))
+  (defrole server-reg
+    (vars (username auth server ca appid name) (challenge text)
+      (cr sr random32) (authk spk akey) (x expt) (y rndx))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen y)
+    (absent (y x)))
+  (defrole server-auth
+    (vars (server ca appid name) (challenge text) (cr sr random32)
+      (authk spk akey) (x expt) (y rndx))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen y)
+    (absent (y x)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random32 atom) (random48 atom)))
+
+(defskeleton uaf-unbound-tls13
+  (vars (cr sr random32) (challenge text) (authk spk akey)
+    (server ca username auth appid name) (x rndx) (y expt))
+  (defstrand client-reg 5 (cr cr) (sr sr) (challenge challenge)
+    (authk authk) (spk spk) (username username) (auth auth)
+    (server server) (ca ca) (appid appid) (x x) (y y))
+  (non-orig (invk authk) (invk spk) (privk ca))
+  (uniq-orig cr sr)
+  (uniq-gen x)
+  (traces
+    ((send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (recv
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))))
+  (label 0)
+  (unrealized (0 1))
+  (origs (cr (0 0)))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton uaf-unbound-tls13
+  (vars (cr sr random32) (challenge text) (authk spk akey)
+    (username auth appid server ca name) (y x rndx))
+  (defstrand client-reg 5 (cr cr) (sr sr) (challenge challenge)
+    (authk authk) (spk spk) (username username) (auth auth)
+    (server server) (ca ca) (appid appid) (x x) (y y))
+  (defstrand server-reg 4 (cr cr) (sr sr) (challenge challenge)
+    (spk spk) (username username) (server server) (ca ca) (appid appid)
+    (x x) (y y))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((1 1) (0 1)) ((1 3) (0 3)))
+  (non-orig (invk authk) (invk spk) (privk ca))
+  (uniq-orig cr sr)
+  (uniq-gen y x)
+  (absent (y x))
+  (operation encryption-test (displaced 2 0 client-auth 3)
+    (enc
+      (hash
+        (hash "finished"
+          (hash (exp (gen) (mul y x)) "c hs traffic" cr sr))
+        (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+        (cat server spk (enc (hash server spk) (privk ca)))
+        (enc
+          (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server spk
+            (enc (hash server spk) (privk ca))) (invk spk))
+        (hash
+          (hash "finished"
+            (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+          (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+          (cat server spk (enc (hash server spk) (privk ca)))
+          (enc
+            (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+              spk (enc (hash server spk) (privk ca))) (invk spk))))
+      (hash (exp (gen) (mul y x)) "c hs traffic" cr sr)) (1 2))
+  (traces
+    ((send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul y x)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul y x)) "c hs traffic" cr sr)))
+      (recv
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived"))))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived")))))
+    ((recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul y x)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul y x)) "c hs traffic" cr sr)))
+      (send
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived"))))))
+  (label 8)
+  (parent 0)
+  (realized)
+  (shape)
+  (maps
+    ((0)
+      ((server server) (ca ca) (cr cr) (sr sr) (authk authk) (spk spk)
+        (username username) (auth auth) (appid appid)
+        (challenge challenge) (x x) (y y))))
+  (origs (cr (0 0)) (sr (1 1))))
+
+(comment "Nothing left to do")
+
+(defprotocol uaf-unbound-tls13 basic
+  (defrole client-reg
+    (vars (username auth server ca appid name) (challenge text)
+      (cr sr random32) (authk spk akey) (x rndx) (y expt))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (recv
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen x))
+  (defrole client-auth
+    (vars (server ca appid name) (challenge text) (cr sr random32)
+      (authk spk akey) (x rndx) (y expt))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (recv
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (send
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen x))
+  (defrole server-reg
+    (vars (username auth server ca appid name) (challenge text)
+      (cr sr random32) (authk spk akey) (x expt) (y rndx))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen y)
+    (absent (y x)))
+  (defrole server-auth
+    (vars (server ca appid name) (challenge text) (cr sr random32)
+      (authk spk akey) (x expt) (y rndx))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen y)
+    (absent (y x)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random32 atom) (random48 atom)))
+
+(defskeleton uaf-unbound-tls13
+  (vars (cr sr random32) (challenge text) (authk spk akey)
+    (server ca appid name) (x rndx) (y expt))
+  (defstrand client-auth 5 (cr cr) (sr sr) (challenge challenge)
+    (authk authk) (spk spk) (server server) (ca ca) (appid appid) (x x)
+    (y y))
+  (non-orig (invk authk) (invk spk) (privk ca))
+  (uniq-orig cr sr)
+  (uniq-gen x)
+  (traces
+    ((send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (recv
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (send
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))))
+  (label 26)
+  (unrealized (0 1))
+  (origs (cr (0 0)))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton uaf-unbound-tls13
+  (vars (cr sr random32) (challenge text) (authk spk akey)
+    (appid server ca name) (y x rndx))
+  (defstrand client-auth 5 (cr cr) (sr sr) (challenge challenge)
+    (authk authk) (spk spk) (server server) (ca ca) (appid appid) (x x)
+    (y y))
+  (defstrand server-auth 4 (cr cr) (sr sr) (challenge challenge)
+    (spk spk) (server server) (ca ca) (appid appid) (x x) (y y))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((1 1) (0 1)) ((1 3) (0 3)))
+  (non-orig (invk authk) (invk spk) (privk ca))
+  (uniq-orig cr sr)
+  (uniq-gen y x)
+  (absent (y x))
+  (operation encryption-test (displaced 2 0 client-auth 3)
+    (enc
+      (hash
+        (hash "finished"
+          (hash (exp (gen) (mul y x)) "c hs traffic" cr sr))
+        (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+        (cat server spk (enc (hash server spk) (privk ca)))
+        (enc
+          (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server spk
+            (enc (hash server spk) (privk ca))) (invk spk))
+        (hash
+          (hash "finished"
+            (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+          (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+          (cat server spk (enc (hash server spk) (privk ca)))
+          (enc
+            (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+              spk (enc (hash server spk) (privk ca))) (invk spk))))
+      (hash (exp (gen) (mul y x)) "c hs traffic" cr sr)) (1 2))
+  (traces
+    ((send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul y x)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul y x)) "c hs traffic" cr sr)))
+      (recv
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived"))))
+      (send
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived")))))
+    ((recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul y x)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul y x)) "c hs traffic" cr sr)))
+      (send
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived"))))))
+  (label 34)
+  (parent 26)
+  (realized)
+  (shape)
+  (maps
+    ((0)
+      ((server server) (ca ca) (cr cr) (sr sr) (authk authk) (spk spk)
+        (appid appid) (challenge challenge) (x x) (y y))))
+  (origs (cr (0 0)) (sr (1 1))))
+
+(comment "Nothing left to do")
+
+(defprotocol uaf-unbound-tls13 basic
+  (defrole client-reg
+    (vars (username auth server ca appid name) (challenge text)
+      (cr sr random32) (authk spk akey) (x rndx) (y expt))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (recv
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen x))
+  (defrole client-auth
+    (vars (server ca appid name) (challenge text) (cr sr random32)
+      (authk spk akey) (x rndx) (y expt))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (recv
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (send
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen x))
+  (defrole server-reg
+    (vars (username auth server ca appid name) (challenge text)
+      (cr sr random32) (authk spk akey) (x expt) (y rndx))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen y)
+    (absent (y x)))
+  (defrole server-auth
+    (vars (server ca appid name) (challenge text) (cr sr random32)
+      (authk spk akey) (x expt) (y rndx))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen y)
+    (absent (y x)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random32 atom) (random48 atom)))
+
+(defskeleton uaf-unbound-tls13
+  (vars (sr cr random32) (challenge text) (authk spk akey)
+    (username server ca auth appid name) (x expt) (y rndx))
+  (defstrand server-reg 5 (cr cr) (sr sr) (challenge challenge)
+    (authk authk) (spk spk) (username username) (auth auth)
+    (server server) (ca ca) (appid appid) (x x) (y y))
+  (non-orig (invk authk) (invk spk) (privk ca))
+  (uniq-orig sr challenge username)
+  (uniq-gen y)
+  (absent (y x))
+  (traces
+    ((recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))))
+  (label 52)
+  (unrealized (0 4))
+  (origs (username (0 3)) (challenge (0 3)) (sr (0 1)))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton uaf-unbound-tls13
+  (vars (sr cr cr-0 sr-0 random32) (challenge text)
+    (authk spk spk-0 akey)
+    (username server ca auth server-0 ca-0 appid name) (x expt)
+    (y x-0 rndx) (y-0 expt))
+  (defstrand server-reg 5 (cr cr) (sr sr) (challenge challenge)
+    (authk authk) (spk spk) (username username) (auth auth)
+    (server server) (ca ca) (appid appid) (x x) (y y))
+  (defstrand client-reg 5 (cr cr-0) (sr sr-0) (challenge challenge)
+    (authk authk) (spk spk-0) (username username) (auth auth)
+    (server server-0) (ca ca-0) (appid appid) (x x-0) (y y-0))
+  (precedes ((0 3) (1 3)) ((1 4) (0 4)))
+  (non-orig (invk authk) (invk spk) (privk ca))
+  (uniq-orig sr challenge username)
+  (uniq-gen y x-0)
+  (absent (y x))
+  (operation encryption-test (displaced 2 1 client-reg 5)
+    (enc auth-0 authk (hash appid-0 challenge-0 "unbound") (invk authk))
+    (0 4))
+  (traces
+    ((recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    ((send (cat cr-0 (exp (gen) x-0)))
+      (recv
+        (cat (cat sr-0 (exp (gen) y-0))
+          (enc
+            (cat server-0 spk-0
+              (enc (hash server-0 spk-0) (privk ca-0)))
+            (enc
+              (hash (cat cr-0 (exp (gen) x-0))
+                (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0))) (invk spk-0))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x-0 y-0)) "s hs traffic" cr-0
+                  sr-0)) (cat cr-0 (exp (gen) x-0))
+              (cat sr-0 (exp (gen) y-0))
+              (cat server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0)))
+              (enc
+                (hash (cat cr-0 (exp (gen) x-0))
+                  (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                  (enc (hash server-0 spk-0) (privk ca-0)))
+                (invk spk-0)))
+            (hash (exp (gen) (mul x-0 y-0)) "s hs traffic" cr-0 sr-0))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x-0 y-0)) "c hs traffic" cr-0 sr-0))
+            (cat cr-0 (exp (gen) x-0)) (cat sr-0 (exp (gen) y-0))
+            (cat server-0 spk-0
+              (enc (hash server-0 spk-0) (privk ca-0)))
+            (enc
+              (hash (cat cr-0 (exp (gen) x-0))
+                (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0))) (invk spk-0))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x-0 y-0)) "s hs traffic" cr-0
+                  sr-0)) (cat cr-0 (exp (gen) x-0))
+              (cat sr-0 (exp (gen) y-0))
+              (cat server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0)))
+              (enc
+                (hash (cat cr-0 (exp (gen) x-0))
+                  (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                  (enc (hash server-0 spk-0) (privk ca-0)))
+                (invk spk-0))))
+          (hash (exp (gen) (mul x-0 y-0)) "c hs traffic" cr-0 sr-0)))
+      (recv
+        (enc username appid challenge
+          (hash "s ap traffic" cr-0 sr-0
+            (hash (exp (gen) (mul x-0 y-0)) "derived"))))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr-0 sr-0
+            (hash (exp (gen) (mul x-0 y-0)) "derived"))))))
+  (label 54)
+  (parent 52)
+  (realized)
+  (shape)
+  (maps
+    ((0)
+      ((username username) (server server) (ca ca) (sr sr)
+        (challenge challenge) (authk authk) (spk spk) (auth auth)
+        (appid appid) (cr cr) (x x) (y y))))
+  (origs (username (0 3)) (challenge (0 3)) (sr (0 1))))
+
+(defskeleton uaf-unbound-tls13
+  (vars (sr cr cr-0 sr-0 cr-1 sr-1 random32)
+    (challenge challenge-0 text) (authk spk spk-0 spk-1 akey)
+    (username server ca auth appid auth-0 server-0 ca-0 appid-0
+      username-0 server-1 ca-1 name) (x expt) (y x-0 rndx) (y-0 expt)
+    (x-1 rndx) (y-1 expt))
+  (defstrand server-reg 5 (cr cr) (sr sr) (challenge challenge)
+    (authk authk) (spk spk) (username username) (auth auth)
+    (server server) (ca ca) (appid appid) (x x) (y y))
+  (defstrand client-reg 5 (cr cr-0) (sr sr-0) (challenge challenge-0)
+    (authk authk) (spk spk-0) (username username) (auth auth-0)
+    (server server-0) (ca ca-0) (appid appid-0) (x x-0) (y y-0))
+  (defstrand client-reg 5 (cr cr-1) (sr sr-1) (challenge challenge)
+    (authk authk) (spk spk-1) (username username-0) (auth auth)
+    (server server-1) (ca ca-1) (appid appid) (x x-1) (y y-1))
+  (precedes ((0 3) (1 3)) ((0 3) (2 3)) ((1 4) (0 4)) ((2 4) (0 4)))
+  (non-orig (invk authk) (invk spk) (privk ca))
+  (uniq-orig sr challenge username)
+  (uniq-gen y x-0 x-1)
+  (absent (y x))
+  (operation encryption-test (added-strand client-reg 5)
+    (enc auth authk (hash appid challenge "unbound") (invk authk))
+    (0 4))
+  (traces
+    ((recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    ((send (cat cr-0 (exp (gen) x-0)))
+      (recv
+        (cat (cat sr-0 (exp (gen) y-0))
+          (enc
+            (cat server-0 spk-0
+              (enc (hash server-0 spk-0) (privk ca-0)))
+            (enc
+              (hash (cat cr-0 (exp (gen) x-0))
+                (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0))) (invk spk-0))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x-0 y-0)) "s hs traffic" cr-0
+                  sr-0)) (cat cr-0 (exp (gen) x-0))
+              (cat sr-0 (exp (gen) y-0))
+              (cat server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0)))
+              (enc
+                (hash (cat cr-0 (exp (gen) x-0))
+                  (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                  (enc (hash server-0 spk-0) (privk ca-0)))
+                (invk spk-0)))
+            (hash (exp (gen) (mul x-0 y-0)) "s hs traffic" cr-0 sr-0))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x-0 y-0)) "c hs traffic" cr-0 sr-0))
+            (cat cr-0 (exp (gen) x-0)) (cat sr-0 (exp (gen) y-0))
+            (cat server-0 spk-0
+              (enc (hash server-0 spk-0) (privk ca-0)))
+            (enc
+              (hash (cat cr-0 (exp (gen) x-0))
+                (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0))) (invk spk-0))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x-0 y-0)) "s hs traffic" cr-0
+                  sr-0)) (cat cr-0 (exp (gen) x-0))
+              (cat sr-0 (exp (gen) y-0))
+              (cat server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0)))
+              (enc
+                (hash (cat cr-0 (exp (gen) x-0))
+                  (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                  (enc (hash server-0 spk-0) (privk ca-0)))
+                (invk spk-0))))
+          (hash (exp (gen) (mul x-0 y-0)) "c hs traffic" cr-0 sr-0)))
+      (recv
+        (enc username appid-0 challenge-0
+          (hash "s ap traffic" cr-0 sr-0
+            (hash (exp (gen) (mul x-0 y-0)) "derived"))))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth-0 authk (hash appid-0 challenge-0 "unbound"))
+          (enc auth-0 authk (hash appid-0 challenge-0 "unbound")
+            (invk authk))
+          (hash "c ap traffic" cr-0 sr-0
+            (hash (exp (gen) (mul x-0 y-0)) "derived")))))
+    ((send (cat cr-1 (exp (gen) x-1)))
+      (recv
+        (cat (cat sr-1 (exp (gen) y-1))
+          (enc
+            (cat server-1 spk-1
+              (enc (hash server-1 spk-1) (privk ca-1)))
+            (enc
+              (hash (cat cr-1 (exp (gen) x-1))
+                (cat sr-1 (exp (gen) y-1)) server-1 spk-1
+                (enc (hash server-1 spk-1) (privk ca-1))) (invk spk-1))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x-1 y-1)) "s hs traffic" cr-1
+                  sr-1)) (cat cr-1 (exp (gen) x-1))
+              (cat sr-1 (exp (gen) y-1))
+              (cat server-1 spk-1
+                (enc (hash server-1 spk-1) (privk ca-1)))
+              (enc
+                (hash (cat cr-1 (exp (gen) x-1))
+                  (cat sr-1 (exp (gen) y-1)) server-1 spk-1
+                  (enc (hash server-1 spk-1) (privk ca-1)))
+                (invk spk-1)))
+            (hash (exp (gen) (mul x-1 y-1)) "s hs traffic" cr-1 sr-1))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x-1 y-1)) "c hs traffic" cr-1 sr-1))
+            (cat cr-1 (exp (gen) x-1)) (cat sr-1 (exp (gen) y-1))
+            (cat server-1 spk-1
+              (enc (hash server-1 spk-1) (privk ca-1)))
+            (enc
+              (hash (cat cr-1 (exp (gen) x-1))
+                (cat sr-1 (exp (gen) y-1)) server-1 spk-1
+                (enc (hash server-1 spk-1) (privk ca-1))) (invk spk-1))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x-1 y-1)) "s hs traffic" cr-1
+                  sr-1)) (cat cr-1 (exp (gen) x-1))
+              (cat sr-1 (exp (gen) y-1))
+              (cat server-1 spk-1
+                (enc (hash server-1 spk-1) (privk ca-1)))
+              (enc
+                (hash (cat cr-1 (exp (gen) x-1))
+                  (cat sr-1 (exp (gen) y-1)) server-1 spk-1
+                  (enc (hash server-1 spk-1) (privk ca-1)))
+                (invk spk-1))))
+          (hash (exp (gen) (mul x-1 y-1)) "c hs traffic" cr-1 sr-1)))
+      (recv
+        (enc username-0 appid challenge
+          (hash "s ap traffic" cr-1 sr-1
+            (hash (exp (gen) (mul x-1 y-1)) "derived"))))
+      (send
+        (enc (hash "key handle" (invk authk) username-0)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr-1 sr-1
+            (hash (exp (gen) (mul x-1 y-1)) "derived"))))))
+  (label 55)
+  (parent 52)
+  (realized)
+  (shape)
+  (maps
+    ((0)
+      ((username username) (server server) (ca ca) (sr sr)
+        (challenge challenge) (authk authk) (spk spk) (auth auth)
+        (appid appid) (cr cr) (x x) (y y))))
+  (origs (username (0 3)) (challenge (0 3)) (sr (0 1))))
+
+(comment "Nothing left to do")
+
+(defprotocol uaf-unbound-tls13 basic
+  (defrole client-reg
+    (vars (username auth server ca appid name) (challenge text)
+      (cr sr random32) (authk spk akey) (x rndx) (y expt))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (recv
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen x))
+  (defrole client-auth
+    (vars (server ca appid name) (challenge text) (cr sr random32)
+      (authk spk akey) (x rndx) (y expt))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (recv
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (send
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen x))
+  (defrole server-reg
+    (vars (username auth server ca appid name) (challenge text)
+      (cr sr random32) (authk spk akey) (x expt) (y rndx))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen y)
+    (absent (y x)))
+  (defrole server-auth
+    (vars (server ca appid name) (challenge text) (cr sr random32)
+      (authk spk akey) (x expt) (y rndx))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen y)
+    (absent (y x)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random32 atom) (random48 atom)))
+
+(defskeleton uaf-unbound-tls13
+  (vars (sr cr random32) (challenge text) (authk spk akey)
+    (server ca appid name) (x expt) (y rndx))
+  (defstrand server-auth 5 (cr cr) (sr sr) (challenge challenge)
+    (authk authk) (spk spk) (server server) (ca ca) (appid appid) (x x)
+    (y y))
+  (non-orig (invk authk) (invk spk) (privk ca))
+  (uniq-orig sr challenge)
+  (uniq-gen y)
+  (absent (y x))
+  (traces
+    ((recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))))
+  (label 56)
+  (unrealized (0 4))
+  (origs (challenge (0 3)) (sr (0 1)))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton uaf-unbound-tls13
+  (vars (sr cr cr-0 sr-0 random32) (challenge text)
+    (authk spk spk-0 akey) (server ca appid server-0 ca-0 name) (x expt)
+    (y x-0 rndx) (y-0 expt))
+  (defstrand server-auth 5 (cr cr) (sr sr) (challenge challenge)
+    (authk authk) (spk spk) (server server) (ca ca) (appid appid) (x x)
+    (y y))
+  (defstrand client-auth 5 (cr cr-0) (sr sr-0) (challenge challenge)
+    (authk authk) (spk spk-0) (server server-0) (ca ca-0) (appid appid)
+    (x x-0) (y y-0))
+  (precedes ((0 3) (1 3)) ((1 4) (0 4)))
+  (non-orig (invk authk) (invk spk) (privk ca))
+  (uniq-orig sr challenge)
+  (uniq-gen y x-0)
+  (absent (y x))
+  (operation encryption-test (added-strand client-auth 5)
+    (enc (hash appid "unbound" challenge) (invk authk)) (0 4))
+  (traces
+    ((recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    ((send (cat cr-0 (exp (gen) x-0)))
+      (recv
+        (cat (cat sr-0 (exp (gen) y-0))
+          (enc
+            (cat server-0 spk-0
+              (enc (hash server-0 spk-0) (privk ca-0)))
+            (enc
+              (hash (cat cr-0 (exp (gen) x-0))
+                (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0))) (invk spk-0))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x-0 y-0)) "s hs traffic" cr-0
+                  sr-0)) (cat cr-0 (exp (gen) x-0))
+              (cat sr-0 (exp (gen) y-0))
+              (cat server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0)))
+              (enc
+                (hash (cat cr-0 (exp (gen) x-0))
+                  (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                  (enc (hash server-0 spk-0) (privk ca-0)))
+                (invk spk-0)))
+            (hash (exp (gen) (mul x-0 y-0)) "s hs traffic" cr-0 sr-0))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x-0 y-0)) "c hs traffic" cr-0 sr-0))
+            (cat cr-0 (exp (gen) x-0)) (cat sr-0 (exp (gen) y-0))
+            (cat server-0 spk-0
+              (enc (hash server-0 spk-0) (privk ca-0)))
+            (enc
+              (hash (cat cr-0 (exp (gen) x-0))
+                (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0))) (invk spk-0))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x-0 y-0)) "s hs traffic" cr-0
+                  sr-0)) (cat cr-0 (exp (gen) x-0))
+              (cat sr-0 (exp (gen) y-0))
+              (cat server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0)))
+              (enc
+                (hash (cat cr-0 (exp (gen) x-0))
+                  (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                  (enc (hash server-0 spk-0) (privk ca-0)))
+                (invk spk-0))))
+          (hash (exp (gen) (mul x-0 y-0)) "c hs traffic" cr-0 sr-0)))
+      (recv
+        (enc appid challenge
+          (hash "s ap traffic" cr-0 sr-0
+            (hash (exp (gen) (mul x-0 y-0)) "derived"))))
+      (send
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr-0 sr-0
+            (hash (exp (gen) (mul x-0 y-0)) "derived"))))))
+  (label 57)
+  (parent 56)
+  (realized)
+  (shape)
+  (maps
+    ((0)
+      ((server server) (ca ca) (sr sr) (challenge challenge)
+        (authk authk) (spk spk) (appid appid) (cr cr) (x x) (y y))))
+  (origs (challenge (0 3)) (sr (0 1))))
+
+(comment "Nothing left to do")
+
+(defprotocol uaf-unbound-tls13 basic
+  (defrole client-reg
+    (vars (username auth server ca appid name) (challenge text)
+      (cr sr random32) (authk spk akey) (x rndx) (y expt))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (recv
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen x))
+  (defrole client-auth
+    (vars (server ca appid name) (challenge text) (cr sr random32)
+      (authk spk akey) (x rndx) (y expt))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (recv
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (send
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen x))
+  (defrole server-reg
+    (vars (username auth server ca appid name) (challenge text)
+      (cr sr random32) (authk spk akey) (x expt) (y rndx))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen y)
+    (absent (y x)))
+  (defrole server-auth
+    (vars (server ca appid name) (challenge text) (cr sr random32)
+      (authk spk akey) (x expt) (y rndx))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen y)
+    (absent (y x)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random32 atom) (random48 atom)))
+
+(defskeleton uaf-unbound-tls13
+  (vars (cr sr random32) (challenge text) (authk spk akey)
+    (server ca appid username auth name) (x rndx) (y expt))
+  (defstrand client-reg 5 (cr cr) (sr sr) (challenge challenge)
+    (authk authk) (spk spk) (username username) (auth auth)
+    (server server) (ca ca) (appid appid) (x x) (y y))
+  (non-orig (invk authk) (invk spk) (privk ca))
+  (uniq-orig cr sr)
+  (uniq-gen x)
+  (goals
+    (forall
+      ((cr sr random32) (challenge text) (authk spk akey)
+        (server ca appid name) (x rndx) (z strd))
+      (implies
+        (and (p "client-reg" z 5) (p "client-reg" "cr" z cr)
+          (p "client-reg" "sr" z sr)
+          (p "client-reg" "challenge" z challenge)
+          (p "client-reg" "authk" z authk) (p "client-reg" "spk" z spk)
+          (p "client-reg" "appid" z appid)
+          (p "client-reg" "server" z server) (p "client-reg" "ca" z ca)
+          (p "client-reg" "x" z x) (non (invk authk)) (non (invk spk))
+          (non (privk ca)) (uniq sr) (ugen x) (uniq-at cr z 0))
+        (exists ((z-0 strd))
+          (and (p "server-reg" z-0 4)
+            (p "server-reg" "challenge" z-0 challenge)
+            (p "server-reg" "appid" z-0 appid)
+            (p "server-reg" "server" z-0 server))))))
+  (traces
+    ((send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (recv
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))))
+  (label 58)
+  (unrealized (0 1))
+  (origs (cr (0 0)))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton uaf-unbound-tls13
+  (vars (cr sr random32) (challenge text) (authk spk akey)
+    (appid username auth server ca name) (y x rndx))
+  (defstrand client-reg 5 (cr cr) (sr sr) (challenge challenge)
+    (authk authk) (spk spk) (username username) (auth auth)
+    (server server) (ca ca) (appid appid) (x x) (y y))
+  (defstrand server-reg 4 (cr cr) (sr sr) (challenge challenge)
+    (spk spk) (username username) (server server) (ca ca) (appid appid)
+    (x x) (y y))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((1 1) (0 1)) ((1 3) (0 3)))
+  (non-orig (invk authk) (invk spk) (privk ca))
+  (uniq-orig cr sr)
+  (uniq-gen y x)
+  (absent (y x))
+  (operation encryption-test (displaced 2 0 client-auth 3)
+    (enc
+      (hash
+        (hash "finished"
+          (hash (exp (gen) (mul y x)) "c hs traffic" cr sr))
+        (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+        (cat server spk (enc (hash server spk) (privk ca)))
+        (enc
+          (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server spk
+            (enc (hash server spk) (privk ca))) (invk spk))
+        (hash
+          (hash "finished"
+            (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+          (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+          (cat server spk (enc (hash server spk) (privk ca)))
+          (enc
+            (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+              spk (enc (hash server spk) (privk ca))) (invk spk))))
+      (hash (exp (gen) (mul y x)) "c hs traffic" cr sr)) (1 2))
+  (traces
+    ((send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul y x)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul y x)) "c hs traffic" cr sr)))
+      (recv
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived"))))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived")))))
+    ((recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul y x)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul y x)) "c hs traffic" cr sr)))
+      (send
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived"))))))
+  (label 66)
+  (parent 58)
+  (realized)
+  (shape)
+  (satisfies yes)
+  (maps
+    ((0)
+      ((cr cr) (sr sr) (challenge challenge) (authk authk) (spk spk)
+        (server server) (ca ca) (appid appid) (x x) (username username)
+        (auth auth) (y y))))
+  (origs (sr (1 1)) (cr (0 0))))
+
+(comment "Nothing left to do")
+
+(defprotocol uaf-unbound-tls13 basic
+  (defrole client-reg
+    (vars (username auth server ca appid name) (challenge text)
+      (cr sr random32) (authk spk akey) (x rndx) (y expt))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (recv
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen x))
+  (defrole client-auth
+    (vars (server ca appid name) (challenge text) (cr sr random32)
+      (authk spk akey) (x rndx) (y expt))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (recv
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (send
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen x))
+  (defrole server-reg
+    (vars (username auth server ca appid name) (challenge text)
+      (cr sr random32) (authk spk akey) (x expt) (y rndx))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen y)
+    (absent (y x)))
+  (defrole server-auth
+    (vars (server ca appid name) (challenge text) (cr sr random32)
+      (authk spk akey) (x expt) (y rndx))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen y)
+    (absent (y x)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random32 atom) (random48 atom)))
+
+(defskeleton uaf-unbound-tls13
+  (vars (cr sr random32) (challenge text) (authk spk akey)
+    (server ca appid name) (x rndx) (y expt))
+  (defstrand client-auth 5 (cr cr) (sr sr) (challenge challenge)
+    (authk authk) (spk spk) (server server) (ca ca) (appid appid) (x x)
+    (y y))
+  (non-orig (invk authk) (invk spk) (privk ca))
+  (uniq-orig cr sr)
+  (uniq-gen x)
+  (goals
+    (forall
+      ((cr sr random32) (challenge text) (authk spk akey)
+        (server ca appid name) (x rndx) (z strd))
+      (implies
+        (and (p "client-auth" z 5) (p "client-auth" "cr" z cr)
+          (p "client-auth" "sr" z sr)
+          (p "client-auth" "challenge" z challenge)
+          (p "client-auth" "authk" z authk)
+          (p "client-auth" "spk" z spk)
+          (p "client-auth" "appid" z appid)
+          (p "client-auth" "server" z server)
+          (p "client-auth" "ca" z ca) (p "client-auth" "x" z x)
+          (non (invk authk)) (non (invk spk)) (non (privk ca)) (uniq sr)
+          (ugen x) (uniq-at cr z 0))
+        (exists ((z-0 strd))
+          (and (p "server-auth" z-0 4)
+            (p "server-auth" "challenge" z-0 challenge)
+            (p "server-auth" "appid" z-0 appid)
+            (p "server-auth" "server" z-0 server))))))
+  (traces
+    ((send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (recv
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (send
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))))
+  (label 84)
+  (unrealized (0 1))
+  (origs (cr (0 0)))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton uaf-unbound-tls13
+  (vars (cr sr random32) (challenge text) (authk spk akey)
+    (appid server ca name) (y x rndx))
+  (defstrand client-auth 5 (cr cr) (sr sr) (challenge challenge)
+    (authk authk) (spk spk) (server server) (ca ca) (appid appid) (x x)
+    (y y))
+  (defstrand server-auth 4 (cr cr) (sr sr) (challenge challenge)
+    (spk spk) (server server) (ca ca) (appid appid) (x x) (y y))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((1 1) (0 1)) ((1 3) (0 3)))
+  (non-orig (invk authk) (invk spk) (privk ca))
+  (uniq-orig cr sr)
+  (uniq-gen y x)
+  (absent (y x))
+  (operation encryption-test (displaced 2 0 client-auth 3)
+    (enc
+      (hash
+        (hash "finished"
+          (hash (exp (gen) (mul y x)) "c hs traffic" cr sr))
+        (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+        (cat server spk (enc (hash server spk) (privk ca)))
+        (enc
+          (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server spk
+            (enc (hash server spk) (privk ca))) (invk spk))
+        (hash
+          (hash "finished"
+            (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+          (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+          (cat server spk (enc (hash server spk) (privk ca)))
+          (enc
+            (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+              spk (enc (hash server spk) (privk ca))) (invk spk))))
+      (hash (exp (gen) (mul y x)) "c hs traffic" cr sr)) (1 2))
+  (traces
+    ((send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul y x)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul y x)) "c hs traffic" cr sr)))
+      (recv
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived"))))
+      (send
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived")))))
+    ((recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul y x)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul y x)) "c hs traffic" cr sr)))
+      (send
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived"))))))
+  (label 92)
+  (parent 84)
+  (realized)
+  (shape)
+  (satisfies yes)
+  (maps
+    ((0)
+      ((cr cr) (sr sr) (challenge challenge) (authk authk) (spk spk)
+        (server server) (ca ca) (appid appid) (x x) (y y))))
+  (origs (sr (1 1)) (cr (0 0))))
+
+(comment "Nothing left to do")
+
+(defprotocol uaf-unbound-tls13 basic
+  (defrole client-reg
+    (vars (username auth server ca appid name) (challenge text)
+      (cr sr random32) (authk spk akey) (x rndx) (y expt))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (recv
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen x))
+  (defrole client-auth
+    (vars (server ca appid name) (challenge text) (cr sr random32)
+      (authk spk akey) (x rndx) (y expt))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (recv
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (send
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen x))
+  (defrole server-reg
+    (vars (username auth server ca appid name) (challenge text)
+      (cr sr random32) (authk spk akey) (x expt) (y rndx))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen y)
+    (absent (y x)))
+  (defrole server-auth
+    (vars (server ca appid name) (challenge text) (cr sr random32)
+      (authk spk akey) (x expt) (y rndx))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen y)
+    (absent (y x)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random32 atom) (random48 atom)))
+
+(defskeleton uaf-unbound-tls13
+  (vars (sr cr random32) (challenge text) (authk spk akey)
+    (server ca appid username auth name) (y rndx) (x expt))
+  (defstrand server-reg 5 (cr cr) (sr sr) (challenge challenge)
+    (authk authk) (spk spk) (username username) (auth auth)
+    (server server) (ca ca) (appid appid) (x x) (y y))
+  (non-orig (invk authk) (invk spk) (privk ca))
+  (uniq-orig sr challenge)
+  (uniq-gen y)
+  (goals
+    (forall
+      ((sr random32) (challenge text) (authk spk akey)
+        (server ca appid name) (y rndx) (z strd))
+      (implies
+        (and (p "server-reg" z 5) (p "server-reg" "sr" z sr)
+          (p "server-reg" "challenge" z challenge)
+          (p "server-reg" "authk" z authk) (p "server-reg" "spk" z spk)
+          (p "server-reg" "server" z server)
+          (p "server-reg" "appid" z appid) (p "server-reg" "ca" z ca)
+          (p "server-reg" "y" z y) (non (invk authk)) (non (invk spk))
+          (non (privk ca)) (ugen y) (uniq-at challenge z 3)
+          (uniq-at sr z 1))
+        (exists ((z-0 strd))
+          (and (p "client-reg" z-0 5)
+            (p "client-reg" "challenge" z-0 challenge)
+            (p "client-reg" "server" z-0 server)
+            (p "client-reg" "appid" z-0 appid))))))
+  (traces
+    ((recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul y x)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul y x)) "c hs traffic" cr sr)))
+      (send
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived"))))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived"))))))
+  (label 110)
+  (unrealized (0 4))
+  (origs (challenge (0 3)) (sr (0 1)))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton uaf-unbound-tls13
+  (vars (sr cr cr-0 sr-0 random32) (challenge text)
+    (authk spk spk-0 akey)
+    (server ca username auth server-0 ca-0 appid name) (y rndx) (x expt)
+    (x-0 rndx) (y-0 expt))
+  (defstrand server-reg 5 (cr cr) (sr sr) (challenge challenge)
+    (authk authk) (spk spk) (username username) (auth auth)
+    (server server) (ca ca) (appid appid) (x x) (y y))
+  (defstrand client-reg 5 (cr cr-0) (sr sr-0) (challenge challenge)
+    (authk authk) (spk spk-0) (username username) (auth auth)
+    (server server-0) (ca ca-0) (appid appid) (x x-0) (y y-0))
+  (precedes ((0 3) (1 3)) ((1 4) (0 4)))
+  (non-orig (invk authk) (invk spk) (privk ca))
+  (uniq-orig sr challenge)
+  (uniq-gen y x-0)
+  (operation encryption-test (displaced 2 1 client-reg 5)
+    (enc auth-0 authk (hash appid-0 challenge-0 "unbound") (invk authk))
+    (0 4))
+  (traces
+    ((recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul y x)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul y x)) "c hs traffic" cr sr)))
+      (send
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived"))))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived")))))
+    ((send (cat cr-0 (exp (gen) x-0)))
+      (recv
+        (cat (cat sr-0 (exp (gen) y-0))
+          (enc
+            (cat server-0 spk-0
+              (enc (hash server-0 spk-0) (privk ca-0)))
+            (enc
+              (hash (cat cr-0 (exp (gen) x-0))
+                (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0))) (invk spk-0))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x-0 y-0)) "s hs traffic" cr-0
+                  sr-0)) (cat cr-0 (exp (gen) x-0))
+              (cat sr-0 (exp (gen) y-0))
+              (cat server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0)))
+              (enc
+                (hash (cat cr-0 (exp (gen) x-0))
+                  (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                  (enc (hash server-0 spk-0) (privk ca-0)))
+                (invk spk-0)))
+            (hash (exp (gen) (mul x-0 y-0)) "s hs traffic" cr-0 sr-0))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x-0 y-0)) "c hs traffic" cr-0 sr-0))
+            (cat cr-0 (exp (gen) x-0)) (cat sr-0 (exp (gen) y-0))
+            (cat server-0 spk-0
+              (enc (hash server-0 spk-0) (privk ca-0)))
+            (enc
+              (hash (cat cr-0 (exp (gen) x-0))
+                (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0))) (invk spk-0))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x-0 y-0)) "s hs traffic" cr-0
+                  sr-0)) (cat cr-0 (exp (gen) x-0))
+              (cat sr-0 (exp (gen) y-0))
+              (cat server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0)))
+              (enc
+                (hash (cat cr-0 (exp (gen) x-0))
+                  (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                  (enc (hash server-0 spk-0) (privk ca-0)))
+                (invk spk-0))))
+          (hash (exp (gen) (mul x-0 y-0)) "c hs traffic" cr-0 sr-0)))
+      (recv
+        (enc username appid challenge
+          (hash "s ap traffic" cr-0 sr-0
+            (hash (exp (gen) (mul x-0 y-0)) "derived"))))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr-0 sr-0
+            (hash (exp (gen) (mul x-0 y-0)) "derived"))))))
+  (label 112)
+  (parent 110)
+  (realized)
+  (shape)
+  (satisfies
+    (no (p "client-reg" "server" z-0 server) (sr sr)
+      (challenge challenge) (authk authk) (spk spk) (server server)
+      (ca ca) (appid appid) (y y) (z 0)))
+  (maps
+    ((0)
+      ((sr sr) (challenge challenge) (authk authk) (spk spk)
+        (server server) (ca ca) (appid appid) (y y) (username username)
+        (auth auth) (cr cr) (x x))))
+  (origs (challenge (0 3)) (sr (0 1))))
+
+(defskeleton uaf-unbound-tls13
+  (vars (sr cr cr-0 sr-0 cr-1 sr-1 random32)
+    (challenge challenge-0 text) (authk spk spk-0 spk-1 akey)
+    (server ca appid username auth auth-0 server-0 ca-0 appid-0
+      username-0 server-1 ca-1 name) (y rndx) (x expt) (x-0 rndx)
+    (y-0 expt) (x-1 rndx) (y-1 expt))
+  (defstrand server-reg 5 (cr cr) (sr sr) (challenge challenge)
+    (authk authk) (spk spk) (username username) (auth auth)
+    (server server) (ca ca) (appid appid) (x x) (y y))
+  (defstrand client-reg 5 (cr cr-0) (sr sr-0) (challenge challenge-0)
+    (authk authk) (spk spk-0) (username username) (auth auth-0)
+    (server server-0) (ca ca-0) (appid appid-0) (x x-0) (y y-0))
+  (defstrand client-reg 5 (cr cr-1) (sr sr-1) (challenge challenge)
+    (authk authk) (spk spk-1) (username username-0) (auth auth)
+    (server server-1) (ca ca-1) (appid appid) (x x-1) (y y-1))
+  (precedes ((0 3) (2 3)) ((1 4) (0 4)) ((2 4) (0 4)))
+  (non-orig (invk authk) (invk spk) (privk ca))
+  (uniq-orig sr challenge)
+  (uniq-gen y x-0 x-1)
+  (operation encryption-test (added-strand client-reg 5)
+    (enc auth authk (hash appid challenge "unbound") (invk authk))
+    (0 4))
+  (traces
+    ((recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul y x)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul y x)) "c hs traffic" cr sr)))
+      (send
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived"))))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived")))))
+    ((send (cat cr-0 (exp (gen) x-0)))
+      (recv
+        (cat (cat sr-0 (exp (gen) y-0))
+          (enc
+            (cat server-0 spk-0
+              (enc (hash server-0 spk-0) (privk ca-0)))
+            (enc
+              (hash (cat cr-0 (exp (gen) x-0))
+                (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0))) (invk spk-0))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x-0 y-0)) "s hs traffic" cr-0
+                  sr-0)) (cat cr-0 (exp (gen) x-0))
+              (cat sr-0 (exp (gen) y-0))
+              (cat server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0)))
+              (enc
+                (hash (cat cr-0 (exp (gen) x-0))
+                  (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                  (enc (hash server-0 spk-0) (privk ca-0)))
+                (invk spk-0)))
+            (hash (exp (gen) (mul x-0 y-0)) "s hs traffic" cr-0 sr-0))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x-0 y-0)) "c hs traffic" cr-0 sr-0))
+            (cat cr-0 (exp (gen) x-0)) (cat sr-0 (exp (gen) y-0))
+            (cat server-0 spk-0
+              (enc (hash server-0 spk-0) (privk ca-0)))
+            (enc
+              (hash (cat cr-0 (exp (gen) x-0))
+                (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0))) (invk spk-0))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x-0 y-0)) "s hs traffic" cr-0
+                  sr-0)) (cat cr-0 (exp (gen) x-0))
+              (cat sr-0 (exp (gen) y-0))
+              (cat server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0)))
+              (enc
+                (hash (cat cr-0 (exp (gen) x-0))
+                  (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                  (enc (hash server-0 spk-0) (privk ca-0)))
+                (invk spk-0))))
+          (hash (exp (gen) (mul x-0 y-0)) "c hs traffic" cr-0 sr-0)))
+      (recv
+        (enc username appid-0 challenge-0
+          (hash "s ap traffic" cr-0 sr-0
+            (hash (exp (gen) (mul x-0 y-0)) "derived"))))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth-0 authk (hash appid-0 challenge-0 "unbound"))
+          (enc auth-0 authk (hash appid-0 challenge-0 "unbound")
+            (invk authk))
+          (hash "c ap traffic" cr-0 sr-0
+            (hash (exp (gen) (mul x-0 y-0)) "derived")))))
+    ((send (cat cr-1 (exp (gen) x-1)))
+      (recv
+        (cat (cat sr-1 (exp (gen) y-1))
+          (enc
+            (cat server-1 spk-1
+              (enc (hash server-1 spk-1) (privk ca-1)))
+            (enc
+              (hash (cat cr-1 (exp (gen) x-1))
+                (cat sr-1 (exp (gen) y-1)) server-1 spk-1
+                (enc (hash server-1 spk-1) (privk ca-1))) (invk spk-1))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x-1 y-1)) "s hs traffic" cr-1
+                  sr-1)) (cat cr-1 (exp (gen) x-1))
+              (cat sr-1 (exp (gen) y-1))
+              (cat server-1 spk-1
+                (enc (hash server-1 spk-1) (privk ca-1)))
+              (enc
+                (hash (cat cr-1 (exp (gen) x-1))
+                  (cat sr-1 (exp (gen) y-1)) server-1 spk-1
+                  (enc (hash server-1 spk-1) (privk ca-1)))
+                (invk spk-1)))
+            (hash (exp (gen) (mul x-1 y-1)) "s hs traffic" cr-1 sr-1))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x-1 y-1)) "c hs traffic" cr-1 sr-1))
+            (cat cr-1 (exp (gen) x-1)) (cat sr-1 (exp (gen) y-1))
+            (cat server-1 spk-1
+              (enc (hash server-1 spk-1) (privk ca-1)))
+            (enc
+              (hash (cat cr-1 (exp (gen) x-1))
+                (cat sr-1 (exp (gen) y-1)) server-1 spk-1
+                (enc (hash server-1 spk-1) (privk ca-1))) (invk spk-1))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x-1 y-1)) "s hs traffic" cr-1
+                  sr-1)) (cat cr-1 (exp (gen) x-1))
+              (cat sr-1 (exp (gen) y-1))
+              (cat server-1 spk-1
+                (enc (hash server-1 spk-1) (privk ca-1)))
+              (enc
+                (hash (cat cr-1 (exp (gen) x-1))
+                  (cat sr-1 (exp (gen) y-1)) server-1 spk-1
+                  (enc (hash server-1 spk-1) (privk ca-1)))
+                (invk spk-1))))
+          (hash (exp (gen) (mul x-1 y-1)) "c hs traffic" cr-1 sr-1)))
+      (recv
+        (enc username-0 appid challenge
+          (hash "s ap traffic" cr-1 sr-1
+            (hash (exp (gen) (mul x-1 y-1)) "derived"))))
+      (send
+        (enc (hash "key handle" (invk authk) username-0)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr-1 sr-1
+            (hash (exp (gen) (mul x-1 y-1)) "derived"))))))
+  (label 113)
+  (parent 110)
+  (realized)
+  (shape)
+  (satisfies
+    (no (p "client-reg" "challenge" z-0 challenge) (sr sr)
+      (challenge challenge) (authk authk) (spk spk) (server server)
+      (ca ca) (appid appid) (y y) (z 0)))
+  (maps
+    ((0)
+      ((sr sr) (challenge challenge) (authk authk) (spk spk)
+        (server server) (ca ca) (appid appid) (y y) (username username)
+        (auth auth) (cr cr) (x x))))
+  (origs (challenge (0 3)) (sr (0 1))))
+
+(comment "Nothing left to do")
+
+(defprotocol uaf-unbound-tls13 basic
+  (defrole client-reg
+    (vars (username auth server ca appid name) (challenge text)
+      (cr sr random32) (authk spk akey) (x rndx) (y expt))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (recv
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen x))
+  (defrole client-auth
+    (vars (server ca appid name) (challenge text) (cr sr random32)
+      (authk spk akey) (x rndx) (y expt))
+    (trace (send (cat cr (exp (gen) x)))
+      (recv
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (recv
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (send
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen x))
+  (defrole server-reg
+    (vars (username auth server ca appid name) (challenge text)
+      (cr sr random32) (authk spk akey) (x expt) (y rndx))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc username appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk (hash appid challenge "unbound"))
+          (enc auth authk (hash appid challenge "unbound") (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen y)
+    (absent (y x)))
+  (defrole server-auth
+    (vars (server ca appid name) (challenge text) (cr sr random32)
+      (authk spk akey) (x expt) (y rndx))
+    (trace (recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x y)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x y)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul x y)) "c hs traffic" cr sr)))
+      (send
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived"))))
+      (recv
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul x y)) "derived")))))
+    (uniq-gen y)
+    (absent (y x)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random32 atom) (random48 atom)))
+
+(defskeleton uaf-unbound-tls13
+  (vars (sr cr random32) (challenge text) (authk spk akey)
+    (server ca appid name) (y rndx) (x expt))
+  (defstrand server-auth 5 (cr cr) (sr sr) (challenge challenge)
+    (authk authk) (spk spk) (server server) (ca ca) (appid appid) (x x)
+    (y y))
+  (non-orig (invk authk) (invk spk) (privk ca))
+  (uniq-orig sr challenge)
+  (uniq-gen y)
+  (goals
+    (forall
+      ((sr random32) (challenge text) (authk spk akey)
+        (server ca appid name) (y rndx) (z strd))
+      (implies
+        (and (p "server-auth" z 5) (p "server-auth" "sr" z sr)
+          (p "server-auth" "challenge" z challenge)
+          (p "server-auth" "authk" z authk)
+          (p "server-auth" "spk" z spk)
+          (p "server-auth" "server" z server)
+          (p "server-auth" "appid" z appid) (p "server-auth" "ca" z ca)
+          (p "server-auth" "y" z y) (non (invk authk)) (non (invk spk))
+          (non (privk ca)) (ugen y) (uniq-at challenge z 3)
+          (uniq-at sr z 1))
+        (exists ((z-0 strd))
+          (and (p "client-auth" z-0 5)
+            (p "client-auth" "challenge" z-0 challenge)
+            (p "client-auth" "server" z-0 server)
+            (p "client-auth" "appid" z-0 appid))))))
+  (traces
+    ((recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul y x)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul y x)) "c hs traffic" cr sr)))
+      (send
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived"))))
+      (recv
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived"))))))
+  (label 114)
+  (unrealized (0 4))
+  (origs (challenge (0 3)) (sr (0 1)))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton uaf-unbound-tls13
+  (vars (sr cr cr-0 sr-0 random32) (challenge text)
+    (authk spk spk-0 akey) (server ca appid server-0 ca-0 name) (y rndx)
+    (x expt) (x-0 rndx) (y-0 expt))
+  (defstrand server-auth 5 (cr cr) (sr sr) (challenge challenge)
+    (authk authk) (spk spk) (server server) (ca ca) (appid appid) (x x)
+    (y y))
+  (defstrand client-auth 5 (cr cr-0) (sr sr-0) (challenge challenge)
+    (authk authk) (spk spk-0) (server server-0) (ca ca-0) (appid appid)
+    (x x-0) (y y-0))
+  (precedes ((0 3) (1 3)) ((1 4) (0 4)))
+  (non-orig (invk authk) (invk spk) (privk ca))
+  (uniq-orig sr challenge)
+  (uniq-gen y x-0)
+  (operation encryption-test (added-strand client-auth 5)
+    (enc (hash appid "unbound" challenge) (invk authk)) (0 4))
+  (traces
+    ((recv (cat cr (exp (gen) x)))
+      (send
+        (cat (cat sr (exp (gen) y))
+          (enc (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk)))
+            (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))))
+      (recv
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul y x)) "c hs traffic" cr sr))
+            (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+            (cat server spk (enc (hash server spk) (privk ca)))
+            (enc
+              (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y)) server
+                spk (enc (hash server spk) (privk ca))) (invk spk))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul y x)) "s hs traffic" cr sr))
+              (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+              (cat server spk (enc (hash server spk) (privk ca)))
+              (enc
+                (hash (cat cr (exp (gen) x)) (cat sr (exp (gen) y))
+                  server spk (enc (hash server spk) (privk ca)))
+                (invk spk))))
+          (hash (exp (gen) (mul y x)) "c hs traffic" cr sr)))
+      (send
+        (enc appid challenge
+          (hash "s ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived"))))
+      (recv
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr sr
+            (hash (exp (gen) (mul y x)) "derived")))))
+    ((send (cat cr-0 (exp (gen) x-0)))
+      (recv
+        (cat (cat sr-0 (exp (gen) y-0))
+          (enc
+            (cat server-0 spk-0
+              (enc (hash server-0 spk-0) (privk ca-0)))
+            (enc
+              (hash (cat cr-0 (exp (gen) x-0))
+                (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0))) (invk spk-0))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x-0 y-0)) "s hs traffic" cr-0
+                  sr-0)) (cat cr-0 (exp (gen) x-0))
+              (cat sr-0 (exp (gen) y-0))
+              (cat server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0)))
+              (enc
+                (hash (cat cr-0 (exp (gen) x-0))
+                  (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                  (enc (hash server-0 spk-0) (privk ca-0)))
+                (invk spk-0)))
+            (hash (exp (gen) (mul x-0 y-0)) "s hs traffic" cr-0 sr-0))))
+      (send
+        (enc
+          (hash
+            (hash "finished"
+              (hash (exp (gen) (mul x-0 y-0)) "c hs traffic" cr-0 sr-0))
+            (cat cr-0 (exp (gen) x-0)) (cat sr-0 (exp (gen) y-0))
+            (cat server-0 spk-0
+              (enc (hash server-0 spk-0) (privk ca-0)))
+            (enc
+              (hash (cat cr-0 (exp (gen) x-0))
+                (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0))) (invk spk-0))
+            (hash
+              (hash "finished"
+                (hash (exp (gen) (mul x-0 y-0)) "s hs traffic" cr-0
+                  sr-0)) (cat cr-0 (exp (gen) x-0))
+              (cat sr-0 (exp (gen) y-0))
+              (cat server-0 spk-0
+                (enc (hash server-0 spk-0) (privk ca-0)))
+              (enc
+                (hash (cat cr-0 (exp (gen) x-0))
+                  (cat sr-0 (exp (gen) y-0)) server-0 spk-0
+                  (enc (hash server-0 spk-0) (privk ca-0)))
+                (invk spk-0))))
+          (hash (exp (gen) (mul x-0 y-0)) "c hs traffic" cr-0 sr-0)))
+      (recv
+        (enc appid challenge
+          (hash "s ap traffic" cr-0 sr-0
+            (hash (exp (gen) (mul x-0 y-0)) "derived"))))
+      (send
+        (enc (hash appid "unbound" challenge)
+          (enc (hash appid "unbound" challenge) (invk authk))
+          (hash "c ap traffic" cr-0 sr-0
+            (hash (exp (gen) (mul x-0 y-0)) "derived"))))))
+  (label 115)
+  (parent 114)
+  (realized)
+  (shape)
+  (satisfies
+    (no (p "client-auth" "server" z-0 server) (sr sr)
+      (challenge challenge) (authk authk) (spk spk) (server server)
+      (ca ca) (appid appid) (y y) (z 0)))
+  (maps
+    ((0)
+      ((sr sr) (challenge challenge) (authk authk) (spk spk)
+        (server server) (ca ca) (appid appid) (y y) (cr cr) (x x))))
+  (origs (challenge (0 3)) (sr (0 1))))
+
+(comment "Nothing left to do")

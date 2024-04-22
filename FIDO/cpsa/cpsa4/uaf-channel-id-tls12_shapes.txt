@@ -1,0 +1,1653 @@
+(comment "CPSA 4.4.2")
+(comment "Extracted shapes")
+
+(herald "UAF using TLS1.2 with channel ID binding.")
+
+(comment "CPSA 4.4.2")
+
+(comment "All input read from uaf-channel-id-tls12.scm")
+
+(defprotocol uaf-unbound-tls12 basic
+  (defrole client-reg
+    (vars (client username auth server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc username appid challenge
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) "client_write")))))
+  (defrole client-auth
+    (vars (client server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc appid challenge (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc
+          (hash appid
+            (hash "uaf_channel_id" challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) "client_write")))))
+  (defrole server-reg
+    (vars (client username auth server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc username appid challenge
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) "client_write")))))
+  (defrole server-auth
+    (vars (client server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc appid challenge (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc
+          (hash appid
+            (hash "uaf_channel_id" challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) "client_write")))))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random32 atom) (random48 atom)))
+
+(defskeleton uaf-unbound-tls12
+  (vars (cr sr random32) (pms random48) (challenge text) (authk akey)
+    (client server ca appid username auth name))
+  (defstrand client-reg 6 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (authk authk) (client client)
+    (username username) (auth auth) (server server) (ca ca)
+    (appid appid))
+  (non-orig (invk authk) (privk client) (privk server) (privk ca))
+  (uniq-orig cr sr pms)
+  (goals
+    (forall
+      ((cr sr random32) (pms random48) (challenge text)
+        (client server ca appid name) (authk akey) (z strd))
+      (implies
+        (and (p "client-reg" z 6) (p "client-reg" "cr" z cr)
+          (p "client-reg" "sr" z sr) (p "client-reg" "pms" z pms)
+          (p "client-reg" "challenge" z challenge)
+          (p "client-reg" "authk" z authk)
+          (p "client-reg" "server" z server) (p "client-reg" "ca" z ca)
+          (p "client-reg" "appid" z appid)
+          (p "client-reg" "client" z client) (non (privk client))
+          (non (invk authk)) (non (privk server)) (non (privk ca))
+          (uniq-at cr z 0) (uniq-at pms z 2) (uniq sr))
+        (exists ((z-0 strd))
+          (and (p "server-reg" z-0 5)
+            (p "server-reg" "challenge" z-0 challenge)
+            (p "server-reg" "server" z-0 server)
+            (p "server-reg" "appid" z-0 appid))))))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc username appid challenge
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) "client_write")))))
+  (label 0)
+  (unrealized (0 1) (0 3) (0 4))
+  (origs (cr (0 0)) (pms (0 2)))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton uaf-unbound-tls12
+  (vars (cr sr random32) (pms random48) (challenge text) (authk akey)
+    (client appid username auth server ca name))
+  (defstrand client-reg 6 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (authk authk) (client client)
+    (username username) (auth auth) (server server) (ca ca)
+    (appid appid))
+  (defstrand server-reg 5 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (username username) (server server) (ca ca)
+    (appid appid))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((1 1) (0 1)) ((1 3) (0 3))
+    ((1 4) (0 4)))
+  (non-orig (invk authk) (privk client) (privk server) (privk ca))
+  (uniq-orig cr sr pms)
+  (operation encryption-test (displaced 1 2 server-reg 5)
+    (enc username appid challenge
+      (hash (hash pms cr sr) "server_write")) (0 4))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc username appid challenge
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) "client_write"))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc username appid challenge
+          (hash (hash pms cr sr) "server_write")))))
+  (label 5)
+  (parent 0)
+  (realized)
+  (shape)
+  (satisfies yes)
+  (maps
+    ((0)
+      ((cr cr) (sr sr) (pms pms) (challenge challenge) (client client)
+        (server server) (ca ca) (appid appid) (authk authk)
+        (username username) (auth auth))))
+  (origs (sr (1 1)) (cr (0 0)) (pms (0 2))))
+
+(comment "Nothing left to do")
+
+(defprotocol uaf-unbound-tls12 basic
+  (defrole client-reg
+    (vars (client username auth server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc username appid challenge
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) "client_write")))))
+  (defrole client-auth
+    (vars (client server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc appid challenge (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc
+          (hash appid
+            (hash "uaf_channel_id" challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) "client_write")))))
+  (defrole server-reg
+    (vars (client username auth server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc username appid challenge
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) "client_write")))))
+  (defrole server-auth
+    (vars (client server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc appid challenge (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc
+          (hash appid
+            (hash "uaf_channel_id" challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) "client_write")))))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random32 atom) (random48 atom)))
+
+(defskeleton uaf-unbound-tls12
+  (vars (cr sr random32) (pms random48) (challenge text) (authk akey)
+    (client server ca appid name))
+  (defstrand client-auth 6 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (authk authk) (client client) (server server)
+    (ca ca) (appid appid))
+  (non-orig (invk authk) (privk client) (privk server) (privk ca))
+  (uniq-orig cr sr pms)
+  (goals
+    (forall
+      ((cr sr random32) (pms random48) (challenge text)
+        (client server ca appid name) (authk akey) (z strd))
+      (implies
+        (and (p "client-auth" z 6) (p "client-auth" "cr" z cr)
+          (p "client-auth" "sr" z sr) (p "client-auth" "pms" z pms)
+          (p "client-auth" "challenge" z challenge)
+          (p "client-auth" "authk" z authk)
+          (p "client-auth" "server" z server)
+          (p "client-auth" "ca" z ca) (p "client-auth" "appid" z appid)
+          (p "client-auth" "client" z client) (non (privk client))
+          (non (invk authk)) (non (privk server)) (non (privk ca))
+          (uniq-at cr z 0) (uniq-at pms z 2) (uniq sr))
+        (exists ((z-0 strd))
+          (and (p "client-auth" z-0 5)
+            (p "client-auth" "challenge" z-0 challenge)
+            (p "client-auth" "server" z-0 server)
+            (p "client-auth" "appid" z-0 appid))))))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc appid challenge (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc
+          (hash appid
+            (hash "uaf_channel_id" challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) "client_write")))))
+  (label 15)
+  (unrealized (0 1) (0 3) (0 4))
+  (origs (cr (0 0)) (pms (0 2)))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton uaf-unbound-tls12
+  (vars (cr sr random32) (pms random48) (challenge text) (authk akey)
+    (client appid server ca name))
+  (defstrand client-auth 6 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (authk authk) (client client) (server server)
+    (ca ca) (appid appid))
+  (defstrand server-auth 5 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (server server) (ca ca) (appid appid))
+  (precedes ((0 0) (1 0)) ((0 2) (1 2)) ((1 1) (0 1)) ((1 3) (0 3))
+    ((1 4) (0 4)))
+  (non-orig (invk authk) (privk client) (privk server) (privk ca))
+  (uniq-orig cr sr pms)
+  (operation encryption-test (displaced 1 2 server-auth 5)
+    (enc appid challenge (hash (hash pms cr sr) "server_write")) (0 4))
+  (traces
+    ((send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc appid challenge (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc
+          (hash appid
+            (hash "uaf_channel_id" challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) "client_write"))))
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc appid challenge (hash (hash pms cr sr) "server_write")))))
+  (label 20)
+  (parent 15)
+  (realized)
+  (shape)
+  (satisfies yes)
+  (maps
+    ((0)
+      ((cr cr) (sr sr) (pms pms) (challenge challenge) (client client)
+        (server server) (ca ca) (appid appid) (authk authk))))
+  (origs (sr (1 1)) (cr (0 0)) (pms (0 2))))
+
+(comment "Nothing left to do")
+
+(defprotocol uaf-unbound-tls12 basic
+  (defrole client-reg
+    (vars (client username auth server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc username appid challenge
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) "client_write")))))
+  (defrole client-auth
+    (vars (client server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc appid challenge (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc
+          (hash appid
+            (hash "uaf_channel_id" challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) "client_write")))))
+  (defrole server-reg
+    (vars (client username auth server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc username appid challenge
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) "client_write")))))
+  (defrole server-auth
+    (vars (client server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc appid challenge (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc
+          (hash appid
+            (hash "uaf_channel_id" challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) "client_write")))))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random32 atom) (random48 atom)))
+
+(defskeleton uaf-unbound-tls12
+  (vars (sr cr random32) (pms random48) (challenge text) (authk akey)
+    (client server ca appid username auth name))
+  (defstrand server-reg 6 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (authk authk) (client client)
+    (username username) (auth auth) (server server) (ca ca)
+    (appid appid))
+  (non-orig (invk authk) (privk client) (privk server) (privk ca))
+  (uniq-orig sr challenge)
+  (goals
+    (forall
+      ((sr random32) (challenge text) (client server ca appid name)
+        (authk akey) (z strd))
+      (implies
+        (and (p "server-reg" z 6) (p "server-reg" "sr" z sr)
+          (p "server-reg" "challenge" z challenge)
+          (p "server-reg" "authk" z authk)
+          (p "server-reg" "server" z server) (p "server-reg" "ca" z ca)
+          (p "server-reg" "appid" z appid)
+          (p "server-reg" "client" z client) (non (privk client))
+          (non (invk authk)) (non (privk server)) (non (privk ca))
+          (uniq-at challenge z 4) (uniq-at sr z 1))
+        (exists ((z-0 strd))
+          (and (p "client-reg" z-0 6)
+            (p "client-reg" "challenge" z-0 challenge)
+            (p "client-reg" "server" z-0 server)
+            (p "client-reg" "appid" z-0 appid))))))
+  (traces
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc username appid challenge
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) "client_write")))))
+  (label 30)
+  (unrealized (0 5))
+  (origs (challenge (0 4)) (sr (0 1)))
+  (comment "1 in cohort - 1 not yet seen"))
+
+(defskeleton uaf-unbound-tls12
+  (vars (sr cr cr-0 sr-0 random32) (pms pms-0 random48) (challenge text)
+    (authk akey)
+    (server ca username client auth server-0 ca-0 appid name))
+  (defstrand server-reg 6 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (authk authk) (client client)
+    (username username) (auth auth) (server server) (ca ca)
+    (appid appid))
+  (defstrand client-reg 6 (cr cr-0) (sr sr-0) (pms pms-0)
+    (challenge challenge) (authk authk) (client client)
+    (username username) (auth auth) (server server-0) (ca ca-0)
+    (appid appid))
+  (precedes ((0 4) (1 4)) ((1 5) (0 5)))
+  (non-orig (invk authk) (privk server) (privk ca) (privk client))
+  (uniq-orig sr challenge)
+  (operation encryption-test (displaced 2 1 client-reg 6)
+    (enc auth-0 authk
+      (hash appid challenge
+        (hash "uaf_channel_id" challenge (pubk client)
+          (enc (pubk client) (privk client)))) (invk authk)) (0 5))
+  (traces
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc username appid challenge
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) "client_write"))))
+    ((send cr-0)
+      (recv
+        (cat sr-0 server-0 (pubk server-0)
+          (enc (hash server-0 (pubk server-0)) (privk ca-0))))
+      (send
+        (cat (enc pms-0 (pubk server-0))
+          (enc
+            (hash pms-0 "client finished"
+              (hash cr-0 sr-0
+                (cat server-0 (pubk server-0)
+                  (enc (hash server-0 (pubk server-0)) (privk ca-0)))
+                (enc pms-0 (pubk server-0))))
+            (hash (hash pms-0 cr-0 sr-0) "client_write"))))
+      (recv
+        (enc
+          (hash pms-0 "server finished"
+            (hash cr-0 sr-0
+              (cat server-0 (pubk server-0)
+                (enc (hash server-0 (pubk server-0)) (privk ca-0)))
+              (enc pms-0 (pubk server-0))
+              (enc
+                (hash pms-0 "client finished"
+                  (hash cr-0 sr-0
+                    (cat server-0 (pubk server-0)
+                      (enc (hash server-0 (pubk server-0))
+                        (privk ca-0))) (enc pms-0 (pubk server-0))))
+                (hash (hash pms-0 cr-0 sr-0) "client_write"))))
+          (hash (hash pms-0 cr-0 sr-0) "server_write")))
+      (recv
+        (enc username appid challenge
+          (hash (hash pms-0 cr-0 sr-0) "server_write")))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms-0 cr-0 sr-0) "client_write")))))
+  (label 35)
+  (parent 30)
+  (realized)
+  (shape)
+  (satisfies
+    (no (p "client-reg" "server" z-0 server) (sr sr)
+      (challenge challenge) (client client) (server server) (ca ca)
+      (appid appid) (authk authk) (z 0)))
+  (maps
+    ((0)
+      ((sr sr) (challenge challenge) (client client) (server server)
+        (ca ca) (appid appid) (authk authk) (username username)
+        (auth auth) (cr cr) (pms pms))))
+  (origs (challenge (0 4)) (sr (0 1))))
+
+(defskeleton uaf-unbound-tls12
+  (vars (sr cr cr-0 sr-0 cr-1 sr-1 random32) (pms pms-0 pms-1 random48)
+    (challenge challenge-0 text) (authk akey)
+    (client server ca appid username client-0 auth server-0 ca-0 appid-0
+      username-0 auth-0 server-1 ca-1 name))
+  (defstrand server-reg 6 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (authk authk) (client client)
+    (username username) (auth auth-0) (server server) (ca ca)
+    (appid appid))
+  (defstrand client-reg 6 (cr cr-0) (sr sr-0) (pms pms-0)
+    (challenge challenge-0) (authk authk) (client client-0)
+    (username username) (auth auth) (server server-0) (ca ca-0)
+    (appid appid-0))
+  (defstrand client-reg 6 (cr cr-1) (sr sr-1) (pms pms-1)
+    (challenge challenge) (authk authk) (client client)
+    (username username-0) (auth auth-0) (server server-1) (ca ca-1)
+    (appid appid))
+  (precedes ((0 4) (2 4)) ((1 5) (0 5)) ((2 5) (0 5)))
+  (non-orig (invk authk) (privk client) (privk server) (privk ca))
+  (uniq-orig sr challenge)
+  (operation encryption-test (displaced 3 2 client-reg 6)
+    (enc auth-1 authk-0
+      (hash appid challenge
+        (hash "uaf_channel_id" challenge (pubk client)
+          (enc (pubk client) (privk client)))) (invk authk-0)) (0 5))
+  (traces
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc username appid challenge
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth-0 authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth-0 authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) "client_write"))))
+    ((send cr-0)
+      (recv
+        (cat sr-0 server-0 (pubk server-0)
+          (enc (hash server-0 (pubk server-0)) (privk ca-0))))
+      (send
+        (cat (enc pms-0 (pubk server-0))
+          (enc
+            (hash pms-0 "client finished"
+              (hash cr-0 sr-0
+                (cat server-0 (pubk server-0)
+                  (enc (hash server-0 (pubk server-0)) (privk ca-0)))
+                (enc pms-0 (pubk server-0))))
+            (hash (hash pms-0 cr-0 sr-0) "client_write"))))
+      (recv
+        (enc
+          (hash pms-0 "server finished"
+            (hash cr-0 sr-0
+              (cat server-0 (pubk server-0)
+                (enc (hash server-0 (pubk server-0)) (privk ca-0)))
+              (enc pms-0 (pubk server-0))
+              (enc
+                (hash pms-0 "client finished"
+                  (hash cr-0 sr-0
+                    (cat server-0 (pubk server-0)
+                      (enc (hash server-0 (pubk server-0))
+                        (privk ca-0))) (enc pms-0 (pubk server-0))))
+                (hash (hash pms-0 cr-0 sr-0) "client_write"))))
+          (hash (hash pms-0 cr-0 sr-0) "server_write")))
+      (recv
+        (enc username appid-0 challenge-0
+          (hash (hash pms-0 cr-0 sr-0) "server_write")))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk
+            (hash appid-0 challenge-0
+              (hash "uaf_channel_id" challenge-0 (pubk client-0)
+                (enc (pubk client-0) (privk client-0)))))
+          (enc auth authk
+            (hash appid-0 challenge-0
+              (hash "uaf_channel_id" challenge-0 (pubk client-0)
+                (enc (pubk client-0) (privk client-0)))) (invk authk))
+          (hash (hash pms-0 cr-0 sr-0) "client_write"))))
+    ((send cr-1)
+      (recv
+        (cat sr-1 server-1 (pubk server-1)
+          (enc (hash server-1 (pubk server-1)) (privk ca-1))))
+      (send
+        (cat (enc pms-1 (pubk server-1))
+          (enc
+            (hash pms-1 "client finished"
+              (hash cr-1 sr-1
+                (cat server-1 (pubk server-1)
+                  (enc (hash server-1 (pubk server-1)) (privk ca-1)))
+                (enc pms-1 (pubk server-1))))
+            (hash (hash pms-1 cr-1 sr-1) "client_write"))))
+      (recv
+        (enc
+          (hash pms-1 "server finished"
+            (hash cr-1 sr-1
+              (cat server-1 (pubk server-1)
+                (enc (hash server-1 (pubk server-1)) (privk ca-1)))
+              (enc pms-1 (pubk server-1))
+              (enc
+                (hash pms-1 "client finished"
+                  (hash cr-1 sr-1
+                    (cat server-1 (pubk server-1)
+                      (enc (hash server-1 (pubk server-1))
+                        (privk ca-1))) (enc pms-1 (pubk server-1))))
+                (hash (hash pms-1 cr-1 sr-1) "client_write"))))
+          (hash (hash pms-1 cr-1 sr-1) "server_write")))
+      (recv
+        (enc username-0 appid challenge
+          (hash (hash pms-1 cr-1 sr-1) "server_write")))
+      (send
+        (enc (hash "key handle" (invk authk) username-0)
+          (cat auth-0 authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth-0 authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms-1 cr-1 sr-1) "client_write")))))
+  (label 38)
+  (parent 30)
+  (realized)
+  (shape)
+  (satisfies
+    (no (p "client-reg" "challenge" z-0 challenge) (sr sr)
+      (challenge challenge) (client client) (server server) (ca ca)
+      (appid appid) (authk authk) (z 0)))
+  (maps
+    ((0)
+      ((sr sr) (challenge challenge) (client client) (server server)
+        (ca ca) (appid appid) (authk authk) (username username)
+        (auth auth-0) (cr cr) (pms pms))))
+  (origs (challenge (0 4)) (sr (0 1))))
+
+(comment "Nothing left to do")
+
+(defprotocol uaf-unbound-tls12 basic
+  (defrole client-reg
+    (vars (client username auth server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc username appid challenge
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) "client_write")))))
+  (defrole client-auth
+    (vars (client server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (send cr)
+      (recv
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (send
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (recv
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc appid challenge (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc
+          (hash appid
+            (hash "uaf_channel_id" challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) "client_write")))))
+  (defrole server-reg
+    (vars (client username auth server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc username appid challenge
+          (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc (hash "key handle" (invk authk) username)
+          (cat auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))))
+          (enc auth authk
+            (hash appid challenge
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client)))) (invk authk))
+          (hash (hash pms cr sr) "client_write")))))
+  (defrole server-auth
+    (vars (client server ca appid name) (challenge text)
+      (cr sr random32) (pms random48) (authk akey))
+    (trace (recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc appid challenge (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc
+          (hash appid
+            (hash "uaf_channel_id" challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) "client_write")))))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random32 atom) (random48 atom)))
+
+(defskeleton uaf-unbound-tls12
+  (vars (sr cr random32) (pms random48) (challenge text) (authk akey)
+    (client server ca appid name))
+  (defstrand server-auth 6 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (authk authk) (client client) (server server)
+    (ca ca) (appid appid))
+  (non-orig (invk authk) (privk client) (privk server) (privk ca))
+  (uniq-orig sr challenge)
+  (goals
+    (forall
+      ((sr random32) (challenge text) (client server ca appid name)
+        (authk akey) (z strd))
+      (implies
+        (and (p "server-auth" z 6) (p "server-auth" "sr" z sr)
+          (p "server-auth" "challenge" z challenge)
+          (p "server-auth" "authk" z authk)
+          (p "server-auth" "server" z server)
+          (p "server-auth" "ca" z ca) (p "server-auth" "appid" z appid)
+          (p "server-auth" "client" z client) (non (privk client))
+          (non (invk authk)) (non (privk server)) (non (privk ca))
+          (uniq-at challenge z 4) (uniq-at sr z 1))
+        (exists ((z-0 strd))
+          (and (p "client-auth" z-0 6)
+            (p "client-auth" "challenge" z-0 challenge)
+            (p "client-auth" "server" z-0 server)
+            (p "client-auth" "appid" z-0 appid))))))
+  (traces
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc appid challenge (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc
+          (hash appid
+            (hash "uaf_channel_id" challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) "client_write")))))
+  (label 47)
+  (unrealized (0 5))
+  (origs (challenge (0 4)) (sr (0 1)))
+  (comment "2 in cohort - 2 not yet seen"))
+
+(defskeleton uaf-unbound-tls12
+  (vars (sr cr cr-0 sr-0 random32) (pms pms-0 random48) (challenge text)
+    (authk akey) (client server ca appid server-0 ca-0 name))
+  (defstrand server-auth 6 (cr cr) (sr sr) (pms pms)
+    (challenge challenge) (authk authk) (client client) (server server)
+    (ca ca) (appid appid))
+  (defstrand client-auth 6 (cr cr-0) (sr sr-0) (pms pms-0)
+    (challenge challenge) (authk authk) (client client)
+    (server server-0) (ca ca-0) (appid appid))
+  (precedes ((0 4) (1 4)) ((1 5) (0 5)))
+  (non-orig (invk authk) (privk client) (privk server) (privk ca))
+  (uniq-orig sr challenge)
+  (operation encryption-test (displaced 2 1 client-auth 6)
+    (enc
+      (hash appid
+        (hash "uaf_channel_id" challenge (pubk client)
+          (enc (pubk client) (privk client))) challenge) (invk authk-0))
+    (0 5))
+  (traces
+    ((recv cr)
+      (send
+        (cat sr server (pubk server)
+          (enc (hash server (pubk server)) (privk ca))))
+      (recv
+        (cat (enc pms (pubk server))
+          (enc
+            (hash pms "client finished"
+              (hash cr sr
+                (cat server (pubk server)
+                  (enc (hash server (pubk server)) (privk ca)))
+                (enc pms (pubk server))))
+            (hash (hash pms cr sr) "client_write"))))
+      (send
+        (enc
+          (hash pms "server finished"
+            (hash cr sr
+              (cat server (pubk server)
+                (enc (hash server (pubk server)) (privk ca)))
+              (enc pms (pubk server))
+              (enc
+                (hash pms "client finished"
+                  (hash cr sr
+                    (cat server (pubk server)
+                      (enc (hash server (pubk server)) (privk ca)))
+                    (enc pms (pubk server))))
+                (hash (hash pms cr sr) "client_write"))))
+          (hash (hash pms cr sr) "server_write")))
+      (send
+        (enc appid challenge (hash (hash pms cr sr) "server_write")))
+      (recv
+        (enc
+          (hash appid
+            (hash "uaf_channel_id" challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk)) (hash (hash pms cr sr) "client_write"))))
+    ((send cr-0)
+      (recv
+        (cat sr-0 server-0 (pubk server-0)
+          (enc (hash server-0 (pubk server-0)) (privk ca-0))))
+      (send
+        (cat (enc pms-0 (pubk server-0))
+          (enc
+            (hash pms-0 "client finished"
+              (hash cr-0 sr-0
+                (cat server-0 (pubk server-0)
+                  (enc (hash server-0 (pubk server-0)) (privk ca-0)))
+                (enc pms-0 (pubk server-0))))
+            (hash (hash pms-0 cr-0 sr-0) "client_write"))))
+      (recv
+        (enc
+          (hash pms-0 "server finished"
+            (hash cr-0 sr-0
+              (cat server-0 (pubk server-0)
+                (enc (hash server-0 (pubk server-0)) (privk ca-0)))
+              (enc pms-0 (pubk server-0))
+              (enc
+                (hash pms-0 "client finished"
+                  (hash cr-0 sr-0
+                    (cat server-0 (pubk server-0)
+                      (enc (hash server-0 (pubk server-0))
+                        (privk ca-0))) (enc pms-0 (pubk server-0))))
+                (hash (hash pms-0 cr-0 sr-0) "client_write"))))
+          (hash (hash pms-0 cr-0 sr-0) "server_write")))
+      (recv
+        (enc appid challenge
+          (hash (hash pms-0 cr-0 sr-0) "server_write")))
+      (send
+        (enc
+          (hash appid
+            (hash "uaf_channel_id" challenge (pubk client)
+              (enc (pubk client) (privk client))) challenge)
+          (enc
+            (hash appid
+              (hash "uaf_channel_id" challenge (pubk client)
+                (enc (pubk client) (privk client))) challenge)
+            (invk authk))
+          (hash (hash pms-0 cr-0 sr-0) "client_write")))))
+  (label 50)
+  (parent 47)
+  (realized)
+  (shape)
+  (satisfies
+    (no (p "client-auth" "server" z-0 server) (sr sr)
+      (challenge challenge) (client client) (server server) (ca ca)
+      (appid appid) (authk authk) (z 0)))
+  (maps
+    ((0)
+      ((sr sr) (challenge challenge) (client client) (server server)
+        (ca ca) (appid appid) (authk authk) (cr cr) (pms pms))))
+  (origs (challenge (0 4)) (sr (0 1))))
+
+(comment "Nothing left to do")
