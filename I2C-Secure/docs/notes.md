@@ -28,6 +28,7 @@ Calculate H (factor)
 
 ### (Website) AES-GCM Issues Explained:
 - https://soatok.blog/2020/05/13/why-aes-gcm-sucks/
+- https://crypto.stackexchange.com/questions/18420/disadvantage-aes-gcm (attack vectors)
 
 ## Assumptions
 - Basic I2C secure protocol
@@ -69,9 +70,11 @@ Explained Output:
 
 # I2C-Secure Issues observed
 Things to talk about:
-- The avesary can know about the registers of a device basesd on the device schema
-- The slave address is known to the world
+- The avesary can know about the registers of a device (they can research this hardware info -- not to mention the address range is [0x00, 0xff])
+- The secondary address is known to the world
 - secondary-register-0? CPSA mentions that this value can me manipuated by the network??
-- I customized the make file to open the shapes file (use: make open)
 - N_EXEC, P_POV, S_POV can be used as search terms in the shapes file
--
+- MAC "tag" is 128 bits wide
+- Crpytoanalysis: The total amount of data allowed to encrypt on a single key is limited by 2^64 blocks
+    - Since the primary commands are still unencrypted and can be issued by anyone on the network, an advesary can just continously read data until we achieve the 2^64 blocks
+    - Cycling attacks against GCM: https://eprint.iacr.org/2011/202.pdf
