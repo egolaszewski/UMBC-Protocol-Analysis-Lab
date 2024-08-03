@@ -158,8 +158,8 @@
     (defstrand primary 10 (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
    
     ; Assumptions
-    (uniq-gen k iv)             ; Assume that the manufacturer placed secure keys, and IV's
-    (pen-non-orig k iv cntr_init)  ; Assume the advesary doesn't know key, iv, or the init-counter value
+    (uniq-gen k iv)                 ; Assume that the manufacturer placed secure keys, and IV's
+    (pen-non-orig k iv cntr_init)   ; Assume the advesary doesn't know key, iv, or the init-counter value
 
     (comment "[P_POV] Primary's Perspective")
 )
@@ -169,8 +169,8 @@
     (defstrand secondary 10 (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
    
     ; Assumptions
-    (uniq-gen k iv)             ; Assume that the manufacturer placed secure keys, and IV's
-    (pen-non-orig k iv cntr_init)  ; Assume the advesary doesn't know key, iv, or the init-counter value
+    (uniq-gen k iv)                 ; Assume that the manufacturer placed secure keys, and IV's
+    (pen-non-orig k iv cntr_init)   ; Assume the advesary doesn't know key, iv, or the init-counter value
 
     (comment "[S_POV] Secondary's Perspective")
 )
@@ -181,9 +181,9 @@
     (defstrand secondary 10 (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
 
     ; Assumptions
-    (uniq-gen k iv)            ; Assume tha the manufacturer placed secure keys, and IV's
-    (pen-non-orig k iv)        ; Assume the advesary doesn't know key, iv
-                               ; Assume tat the advesary does know the starting cntr (power cycle the device)
+    (uniq-gen k iv)                 ; Assume tha the manufacturer placed secure keys, and IV's
+    (pen-non-orig k iv)             ; Assume the advesary doesn't know key, iv
+                                    ; Assume tat the advesary does know the starting cntr (power cycle the device)
 
     (comment "[PS_POV_CNTR_NOTFRESH] Secondary's Perspective: cntr_init is not fresh")
 )
@@ -194,9 +194,9 @@
     (defstrand secondary 10 (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
 
     ; Assumptions
-    (uniq-gen iv)            ; Assume tha the manufacturer placed secure keys, and IV's
-    (pen-non-orig k iv)        ; Assume the advesary doesn't know key, iv
-                               ; Assume tat the advesary does know the starting cntr (power cycle the device)
+    (uniq-gen iv)                   ; Assume tha the manufacturer placed secure keys, and IV's
+    (pen-non-orig k iv)             ; Assume the advesary doesn't know key, iv
+                                    ; Assume tat the advesary does know the starting cntr (power cycle the device)
 
     (comment "[PS_POV_CNTR&K_NOTFRESH] Secondary's Perspective: cntr_init is not fresh")
 )
