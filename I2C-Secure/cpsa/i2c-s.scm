@@ -66,7 +66,13 @@
 
     ;; Primary device on the serial bus
     (defrole primary
-        (vars (secondary_address name) (secondary_register text) (byte_data cntr_init iv data) (k skey))
+        (vars 
+          (secondary_address name)
+          (secondary_register text)
+          (byte_data cntr_init iv data)
+          (k skey)
+          (len_secondary_address len_byte_data c_len)
+        )
         (trace
             (send "START")                                                              ; Primary takes control of the bus                            
             (send (cat secondary_address "WRITE_REQ"))                                  ; Primary sends a write request for a specific secondary
@@ -93,7 +99,7 @@
                         (GCM-Block-One iv (hash cntr_init) secondary_register k)        ; mulH_prev_prev
                         k
                     ) 
-                    (len secondary_register byte_data)                                  ; c_len
+                    (cat len_secondary_address len_byte_data)                                  ; c_len
                     (GCM-Init iv cntr_init k) ; gcm_init
                 )
             )                                                                     
@@ -104,7 +110,13 @@
 
     ;; Secondary device on the bus
     (defrole secondary
-        (vars (secondary_address name) (secondary_register text) (byte_data cntr_init iv data) (k skey))
+        (vars
+          (secondary_address name)
+          (secondary_register text)
+          (byte_data cntr_init iv data)
+          (k skey)
+          (len_secondary_address len_byte_data c_len)
+        )
         (trace
             (recv "START")                                                              ; Primary takes control of the bus                            
             (recv (cat secondary_address "WRITE_REQ"))                                  ; Primary sends a write request for a specific secondary
@@ -131,13 +143,16 @@
                         (GCM-Block-One iv (hash cntr_init) secondary_register k)        ; mulH_prev_prev
                         k
                     ) 
-                    (hash byte_data )                                                   ; c_len -- for now we can represent the length of the data as a cat of the ciphertext
+                    (cat len_secondary_address len_byte_data)                                                   ; c_len -- for now we can represent the length of the data as a cat of the ciphertext
                     (GCM-Init iv cntr_init k) ; gcm_init
                 )
             )                                                                     
             (send "ACK")                                                                ; Secondary acks
             (recv "STOP")                                                               ; Primary pulls the SDA SDL high (stop condtion)
         )
+    )
+    (lang
+      (c_len atom)
     )
 )
 
@@ -147,7 +162,6 @@
     (defstrand secondary 10 (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
    
     ; Assumptions
-    (uniq-gen k iv)
     (pen-non-orig k iv cntr_init)
 
     (comment "[N_EXEC] Normal Execution of Protocol")
@@ -158,8 +172,8 @@
     (defstrand primary 10 (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
    
     ; Assumptions
-    (uniq-gen k iv)                 ; Assume that the manufacturer placed secure keys, and IV's
-    (pen-non-orig k iv cntr_init)   ; Assume the advesary doesn't know key, iv, or the init-counter value
+    (pen-non-orig k iv cntr_init)  ; Assume the advesary doesn't know key, iv, or the init-counter value
+
 
     (comment "[P_POV] Primary's Perspective")
 )
@@ -169,8 +183,7 @@
     (defstrand secondary 10 (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
    
     ; Assumptions
-    (uniq-gen k iv)                 ; Assume that the manufacturer placed secure keys, and IV's
-    (pen-non-orig k iv cntr_init)   ; Assume the advesary doesn't know key, iv, or the init-counter value
+    (pen-non-orig k iv cntr_init)  ; Assume the advesary doesn't know key, iv, or the init-counter value
 
     (comment "[S_POV] Secondary's Perspective")
 )
@@ -181,9 +194,7 @@
     (defstrand secondary 10 (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
 
     ; Assumptions
-    (uniq-gen k iv)                 ; Assume tha the manufacturer placed secure keys, and IV's
-    (pen-non-orig k iv)             ; Assume the advesary doesn't know key, iv
-                                    ; Assume tat the advesary does know the starting cntr (power cycle the device)
+    (pen-non-orig k iv)        ; Assume the advesary doesn't know key, iv
 
     (comment "[PS_POV_CNTR_NOTFRESH] Secondary's Perspective: cntr_init is not fresh")
 )
@@ -194,9 +205,7 @@
     (defstrand secondary 10 (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
 
     ; Assumptions
-    (uniq-gen iv)                   ; Assume tha the manufacturer placed secure keys, and IV's
-    (pen-non-orig k iv)             ; Assume the advesary doesn't know key, iv
-                                    ; Assume tat the advesary does know the starting cntr (power cycle the device)
+    (pen-non-orig k iv)        ; Assume the advesary doesn't know key, iv
 
     (comment "[PS_POV_CNTR&K_NOTFRESH] Secondary's Perspective: cntr_init is not fresh")
 )
