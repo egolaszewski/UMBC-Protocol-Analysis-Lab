@@ -1,4 +1,4 @@
-CPSAFLAGS = +RTS -M512m -N -RTS
+CPSAFLAGS = +RTS -M2048m -N11 -RTS
 
 SRCS := $(wildcard *.scm) $(wildcard *.prot) $(wildcard *.lsp)
 

@@ -1,6 +1,6 @@
-(herald "I2C-Secure")
+(herald "I2C-Secure" (limit 80000))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;; Helper Operators ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Helper Macros ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defmacro (xor a b) 
     (cat
         (enc a b) 
@@ -8,158 +8,218 @@
     )
 )
 
-(defmacro (len a b)
-    (cat 
-        (hash a b)
-        (hash b a)
+;; AES-GCM Macros ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; (defmacro (GCM-GF128-MulH-AAD h auth_data)
+;;     ; H (h) = (enc 0^128 k) hash of key
+;;     ; A (auth_data) = Data which is only authenticated (not encrypted?)
+    
+;;     (hash h auth_data) ; using hash to representThe Galois Field multiplication operation, 
+;;                        ; typically written as H×XH×X or MulH(X)MulH(X), takes these two 
+;;                        ; 128-bit inputs and performs a multiplication in GF(2128)GF(2128).
+
+;;     ;; returns authenticated MultH (but not encrypted), this can be xor'd with ciphertext1
+;; )
+
+(defmacro (GCM-GF128-MulH h x)
+    ; note that the multH_prev can be ct if there is no ADD provided
+    ; note that x can be any value (ciphertext, or the previous output of another GCM-GF128-MulH)
+    (hash h x) ; represents multiplication
+)
+
+(defmacro (GCM-H zero_vector k)
+    (enc zero_vector k)
+    ;; returns H vector: encryption of a 0^128 bit vector by skey k 
+)
+
+(defmacro (GCM-Counter-Encrypt iv cntr k)
+    (enc 
+        (hash iv cntr) ; represents multiplication
+        k
     )
+    ;; returns the encryption of (IV || CNTR) under skey "k"
 )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;; AES-GCM Macros ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defmacro (GCM-Encrypt iv cntr k)
-    (enc iv cntr k) 
-)
-
-(defmacro (GCM-Init iv cntr_init k)
-    (GCM-Encrypt iv cntr_init k)
-)
-
-(defmacro (GCM-Block-One iv cntr_1 pt k)
+(defmacro (GCM-Block-Encrypt iv cntr pt k)
     (xor 
-        (GCM-Encrypt iv cntr_1 k)
+        (GCM-Counter-Encrypt iv cntr k)
         pt
     )
     ;; returns MulH vector i.e. (direct ciphertext)
 )
 
-(defmacro (GCM-Block-N iv cntr_N pt mulH_prev k)
-    (xor 
-        (GCM-Block-One iv cntr_N pt k)
-        mulH_prev
+(defmacro (GCM-Tag mulH_prev h data_len iv cntr_init k)
+    ; Note the data length includes the mulitplication of the cipher length and authentication data: len(A) || len(C)
+    (xor
+        (GCM-GF128-MulH
+            h
+            (xor mulH_prev data_len)
+        )
+        (GCM-Counter-Encrypt iv cntr_init k) ; E(K,Y0)
     )   
-    ;; returns ciphertext xor'd w/ previous MulH
+    ;; returns MAC "TAG"
 )
 
-(defmacro (GCM-Block-Tag mulH_prev c_len gcm_init)
-    (xor 
-        (xor mulH_prev c_len)
-        gcm_init
-    )   
-    ;; returns message integrity code (called tag)
-)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;; I2C-Secure Implementation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; I2C-Secure Implementation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defprotocol I2C-Secure basic
-    ;; timekeep roles (not apart of i2c)
-    ;; (defrole timeset
-    ;;     (vars (clock data))
-    ;;     (trace
-    ;;     (init (cat clock "0")))
-    ;;     (uniq-gen clock)
-    ;;     (fn-of (clock-id (clock "global clock")))
-    ;; )
-    ;; (defrole timetick
-    ;;     (vars (state mesg) (clock data))
-    ;;     (trace
-    ;;     (tran (cat clock state) (cat clock (hash "t" state))))
-    ;; )
-
-    ;; Primary device on the serial bus
+    ;; Primary device on a serial bus
     (defrole primary
         (vars 
-          (secondary_address name)
-          (secondary_register text)
-          (byte_data cntr_init iv data)
-          (k skey)
-          (len_secondary_address len_byte_data c_len)
+            (secondary_address name)
+            (secondary_register text)
+            (byte_data cntr_init iv data)
+            (k skey)
+            (len_secondary_address len_byte_data c_len)
+            (zero_vector vector)
         )
         (trace
-            (send "START")                                                              ; Primary takes control of the bus                            
-            (send (cat secondary_address "WRITE_REQ"))                                  ; Primary sends a write request for a specific secondary
-            (recv "ACK")                                                                ; Secondary acks
-            (send (GCM-Block-One iv (hash cntr_init) secondary_register k))             ; Primary sends a specific register it wishes to write to write to on the secondary
-            (recv "ACK")                                                                ; Secondary acks
-            (send 
-                (GCM-Block-N 
+            ; Primary takes control of the bus 
+            (send "START")                           
+            
+            ; Primary sends a write request for a specific secondary
+            (send (cat secondary_address "WRITE_REQ"))                                  
+            
+            ; Secondary sends ack
+            (recv "ACK")                                                                
+            
+            ; Primary sends a specific register that it wishes to write to
+            (send                                                                
+                (GCM-Block-Encrypt ;ct1
                     iv 
-                    (hash (hash cntr_init))                                             ; cntr_2 - hash chain
-                    byte_data 
-                    (GCM-Block-One iv (hash cntr_init) secondary_register k)            ; mulH_prev
+                    (hash (hash cntr_init)) ; increment counter
+                    secondary_register 
                     k
                 )
-            )                                                                           ; Primary sends data to be written to register 
-            (recv "ACK")                                                                ; Secondary acks
-            ; Secondary sends "TAG"                             
+            )
+
+            ; Secondary sends ack
+            (recv "ACK")
+
+            ; Primary sends data to be written to register 
             (send 
-                (GCM-Block-Tag 
-                    (GCM-Block-N                                                        ; mulH_prev
-                        iv 
-                        (hash (hash cntr_init))                                         ; cntr_2 - hash chain
-                        byte_data 
-                        (GCM-Block-One iv (hash cntr_init) secondary_register k)        ; mulH_prev_prev
-                        k
-                    ) 
-                    (cat len_secondary_address len_byte_data)                                  ; c_len
-                    (GCM-Init iv cntr_init k) ; gcm_init
+                (GCM-Block-Encrypt ; ct2
+                    iv 
+                    (hash (hash (hash cntr_init))) ; increment counter
+                    byte_data 
+                    k
                 )
-            )                                                                     
-            (recv "ACK")                                                                ; Secondary acks
-            (send "STOP")                                                               ; Primary pulls the SDA SDL high (stop condtion)
+            )
+
+            ; Secondary sends ack                                                          
+            (recv "ACK")
+
+            ; Primary sends "TAG"                             
+            (send
+                (GCM-Tag
+                    (GCM-GF128-MulH ; multH_2
+                        (GCM-H zero_vector k) ; h
+                        (xor
+                            (GCM-Block-Encrypt iv (hash (hash (hash cntr_init))) byte_data k) ; ct2
+                            (GCM-GF128-MulH ; multH_1
+                                (GCM-H zero_vector k) ; h
+                                (GCM-Block-Encrypt iv (hash (hash cntr_init)) secondary_register k) ; ct1
+                            )
+                        )
+                    )
+                    (GCM-H zero_vector k) ; h
+                    (cat len_secondary_address len_byte_data) ; represents an addition of data lengths: len(C)
+                    iv 
+                    cntr_init 
+                    k
+                )
+            )
+            
+            ; Secondary acks                                                              
+            (recv "ACK")
+
+            ; Primary pulls the SDA SDL high (stop condtion)
+            (send "STOP")
         )
     )
 
-    ;; Secondary device on the bus
+    ;; Secondary device on a serial bus
     (defrole secondary
-        (vars
-          (secondary_address name)
-          (secondary_register text)
-          (byte_data cntr_init iv data)
-          (k skey)
-          (len_secondary_address len_byte_data c_len)
+        (vars 
+            (secondary_address name)
+            (secondary_register text)
+            (byte_data cntr_init iv data)
+            (k skey)
+            (len_secondary_address len_byte_data c_len)
+            (zero_vector vector)
         )
         (trace
-            (recv "START")                                                              ; Primary takes control of the bus                            
-            (recv (cat secondary_address "WRITE_REQ"))                                  ; Primary sends a write request for a specific secondary
-            (send "ACK")                                                                ; Secondary acks
-            (recv (GCM-Block-One iv (hash cntr_init) secondary_register k))             ; Primary sends a specific register it wishes to write to write to on the secondary
-            (send "ACK")                                                                ; Secondary acks
-            (recv 
-                (GCM-Block-N 
+            ; Primary takes control of the bus 
+            (recv "START")                           
+            
+            ; Primary sends a write request for a specific secondary
+            (recv (cat secondary_address "WRITE_REQ"))                                  
+            
+            ; Secondary sends ack
+            (send "ACK")                                                                
+            
+            ; Primary sends a specific register that it wishes to write to
+            (recv                                                                
+                (GCM-Block-Encrypt ;ct1
                     iv 
-                    (hash (hash cntr_init))                                             ; cntr_2 - hash chain
-                    byte_data 
-                    (GCM-Block-One iv (hash cntr_init) secondary_register k)            ; mulH_prev
+                    (hash (hash cntr_init)) ; increment counter
+                    secondary_register 
                     k
                 )
-            )                                                                           ; Primary sends data to be written to register 
-            (send "ACK")                                                                ; Secondary acks
-            ; Secondary sends "TAG"                             
+            )
+
+            ; Secondary sends ack
+            (send "ACK")
+
+            ; Primary sends data to be written to register 
             (recv 
-                (GCM-Block-Tag 
-                    (GCM-Block-N                                                        ; mulH_prev
-                        iv 
-                        (hash (hash cntr_init))                                         ; cntr_2 - hash chain
-                        byte_data 
-                        (GCM-Block-One iv (hash cntr_init) secondary_register k)        ; mulH_prev_prev
-                        k
-                    ) 
-                    (cat len_secondary_address len_byte_data)                                                   ; c_len -- for now we can represent the length of the data as a cat of the ciphertext
-                    (GCM-Init iv cntr_init k) ; gcm_init
+                (GCM-Block-Encrypt ; ct2
+                    iv 
+                    (hash (hash (hash cntr_init))) ; increment counter
+                    byte_data 
+                    k
                 )
-            )                                                                     
-            (send "ACK")                                                                ; Secondary acks
-            (recv "STOP")                                                               ; Primary pulls the SDA SDL high (stop condtion)
+            )
+
+            ; Secondary sends ack                                                          
+            (send "ACK")
+
+            ; Primary sends "TAG"                             
+            (recv
+                (GCM-Tag
+                    (GCM-GF128-MulH ; multH_2
+                        (GCM-H zero_vector k) ; h
+                        (xor
+                            (GCM-Block-Encrypt iv (hash (hash (hash cntr_init))) byte_data k) ; ct2
+                            (GCM-GF128-MulH ; multH_1
+                                (GCM-H zero_vector k) ; h
+                                (GCM-Block-Encrypt iv (hash (hash cntr_init)) secondary_register k) ; ct1
+                            )
+                        )
+                    )
+                    (GCM-H zero_vector k) ; h
+                    (cat len_secondary_address len_byte_data) ; represents an addition of data lengths: len(C)
+                    iv 
+                    cntr_init 
+                    k
+                )
+            )
+            
+            ; Secondary acks                                                              
+            (send "ACK")
+
+            ; Primary pulls the SDA SDL high (stop condtion)
+            (recv "STOP")
         )
     )
     (lang
-      (c_len atom)
+        (c_len atom)
+        (vector atom)
     )
 )
 
 (defskeleton I2C-Secure
-    (vars (secondary_address name) (secondary_register text) (byte_data cntr_init iv data) (k skey)) 
-    (defstrand primary 10 (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
-    (defstrand secondary 10 (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
+    (vars (zero_vector vector) (secondary_address name) (secondary_register text) (byte_data cntr_init iv data) (k skey)) 
+    (defstrand primary 10 (zero_vector zero_vector) (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
+    (defstrand secondary 10 (zero_vector zero_vector) (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
    
     ; Assumptions
     (pen-non-orig k iv cntr_init)
@@ -168,19 +228,18 @@
 )
 
 (defskeleton I2C-Secure
-    (vars (secondary_address name) (secondary_register text) (byte_data cntr_init iv data) (k skey)) 
-    (defstrand primary 10 (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
+    (vars (zero_vector vector) (secondary_address name) (secondary_register text) (byte_data cntr_init iv data) (k skey)) 
+    (defstrand primary 10 (zero_vector zero_vector) (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
    
     ; Assumptions
     (pen-non-orig k iv cntr_init)  ; Assume the advesary doesn't know key, iv, or the init-counter value
-
 
     (comment "[P_POV] Primary's Perspective")
 )
 
 (defskeleton I2C-Secure
-    (vars (secondary_address name) (secondary_register text) (byte_data cntr_init iv data) (k skey)) 
-    (defstrand secondary 10 (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
+    (vars (zero_vector vector) (secondary_address name) (secondary_register text) (byte_data cntr_init iv data) (k skey)) 
+    (defstrand secondary 10 (zero_vector zero_vector) (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
    
     ; Assumptions
     (pen-non-orig k iv cntr_init)  ; Assume the advesary doesn't know key, iv, or the init-counter value
@@ -189,9 +248,9 @@
 )
 
 (defskeleton I2C-Secure
-    (vars (secondary_address name) (secondary_register text) (byte_data cntr_init iv data) (k skey)) 
-    (defstrand primary 10 (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
-    (defstrand secondary 10 (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
+    (vars (zero_vector vector) (secondary_address name) (secondary_register text) (byte_data cntr_init iv data) (k skey)) 
+    (defstrand primary 10 (zero_vector zero_vector) (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
+    (defstrand secondary 10 (zero_vector zero_vector) (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
 
     ; Assumptions
     (pen-non-orig k iv)        ; Assume the advesary doesn't know key, iv
@@ -200,9 +259,9 @@
 )
 
 (defskeleton I2C-Secure
-    (vars (secondary_address name) (secondary_register text) (byte_data cntr_init iv data) (k skey)) 
-    (defstrand primary 10 (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
-    (defstrand secondary 10 (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
+    (vars (zero_vector vector) (secondary_address name) (secondary_register text) (byte_data cntr_init iv data) (k skey)) 
+    (defstrand primary 10 (zero_vector zero_vector) (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
+    (defstrand secondary 10 (zero_vector zero_vector) (secondary_address secondary_address) (secondary_register secondary_register) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k))
 
     ; Assumptions
     (pen-non-orig k iv)        ; Assume the advesary doesn't know key, iv
@@ -211,7 +270,7 @@
 )
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;; I2C Implementation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; I2C Implementation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; (defprotocol I2C basic
 ;;     (defrole primary
 ;;         (vars (secondary_address secondary_register name) (byte_data clock data))

@@ -1,0 +1,2781 @@
+<?xml version="1.0"?>
+<!-- CPSA 4.4.3 -->
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+ <title>I2C-Secure</title>
+ <meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+ <style>
+  svg.diagram { border-width: 1px; border-style: solid }
+ </style>
+</head>
+<body>
+
+<pre>(comment &quot;CPSA 4.4.3&quot;)
+(comment &quot;Extracted shapes&quot;)
+(herald &quot;I2C-Secure&quot; (limit 80000))
+(comment &quot;CPSA 4.4.3&quot;)
+(comment &quot;All input read from i2c-s.scm&quot;)
+(comment &quot;Step count limited to 80000&quot;)</pre>
+
+<p id="top">Trees: <a href="#t0">0</a> <a href="#t2">2</a> <a href="#t3">3</a> <a href="#t5">5</a> <a href="#t7">7</a>.</p>
+
+<p id="t0">Tree <a href="#top">0</a>, POV <a href="#k0">0</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='79.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 79.920' font-size='12.000'>
+  <text
+   x='39.960' y='26.040' style='text-anchor: middle; fill: black;'
+   onclick='window.open(&quot;#k0&quot;, &quot;_self&quot;)'>0</text>
+  </svg></div>
+
+<pre>(defprotocol I2C-Secure basic
+  (defrole primary
+    (vars (secondary_address name) (secondary_register text)
+      (byte_data cntr_init iv data) (k skey)
+      (len_secondary_address len_byte_data c_len) (zero_vector vector))
+    (trace (send &quot;START&quot;) (send (cat secondary_address &quot;WRITE_REQ&quot;))
+      (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc (enc (hash iv (hash (hash cntr_init))) k)
+            secondary_register)
+          (enc secondary_register
+            (enc (hash iv (hash (hash cntr_init))) k)))) (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc (enc (hash iv (hash (hash (hash cntr_init)))) k)
+            byte_data)
+          (enc byte_data
+            (enc (hash iv (hash (hash (hash cntr_init)))) k))))
+      (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k))))))) (enc (hash iv cntr_init) k))
+          (enc (enc (hash iv cntr_init) k)
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))))))) (recv &quot;ACK&quot;) (send &quot;STOP&quot;)))
+  (defrole secondary
+    (vars (secondary_address name) (secondary_register text)
+      (byte_data cntr_init iv data) (k skey)
+      (len_secondary_address len_byte_data c_len) (zero_vector vector))
+    (trace (recv &quot;START&quot;) (recv (cat secondary_address &quot;WRITE_REQ&quot;))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat (enc (enc (hash iv (hash cntr_init)) k) secondary_register)
+          (enc secondary_register (enc (hash iv (hash cntr_init)) k))))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data)
+          (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat
+          (enc
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))))
+            (enc (hash iv cntr_init) k))
+          (enc (enc (hash iv cntr_init) k)
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init)))
+                          k)))))))))) (send &quot;ACK&quot;) (recv &quot;STOP&quot;)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (c_len atom) (vector atom)))</pre>
+
+<p id="k0">Item <a href="#t0">0</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='179.880pt' height='829.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 179.880 829.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='139.920' y1='114.960' x2='139.920' y2='789.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='789.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g><title>&quot;STOP&quot;</title>
+   <circle style='fill: blue;' cx='139.920' cy='789.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle cx='139.920' cy='714.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (hash (enc zero_vector k) (enc (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k))) (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))) (cat len_secondary_address-0 len_byte_data-0)) (enc len_secondary_address-0 len_byte_data-0 (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k))) (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))))) (enc (hash iv cntr_init) k)) (enc (enc (hash iv cntr_init) k) (hash (enc zero_vector k) (enc (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k))) (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))) (cat len_secondary_address-0 len_byte_data-0)) (enc len_secondary_address-0 len_byte_data-0 (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k))) (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)))))))))</title>
+   <circle style='fill: red;' cx='139.920' cy='639.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle cx='139.920' cy='564.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)))</title>
+   <circle style='fill: red;' cx='139.920' cy='489.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle cx='139.920' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k)))</title>
+   <circle style='fill: red;' cx='139.920' cy='339.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle cx='139.920' cy='264.960' r='6.000'/></g>
+  <g><title>(cat secondary_address &quot;WRITE_REQ&quot;)</title>
+   <circle style='fill: blue;' cx='139.920' cy='189.960' r='6.000'/></g>
+  <g><title>&quot;START&quot;</title>
+   <circle style='fill: blue;' cx='139.920' cy='114.960' r='6.000'/></g>
+  <g><title>&quot;STOP&quot;</title>
+   <circle cx='39.960' cy='789.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle style='fill: blue;' cx='39.960' cy='714.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (hash (enc zero_vector k) (enc (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k))) (cat (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k))))) (cat len_secondary_address len_byte_data)) (enc len_secondary_address len_byte_data (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k))) (cat (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k))))))) (enc (hash iv cntr_init) k)) (enc (enc (hash iv cntr_init) k) (hash (enc zero_vector k) (enc (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k))) (cat (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k))))) (cat len_secondary_address len_byte_data)) (enc len_secondary_address len_byte_data (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k))) (cat (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)))))))))</title>
+   <circle cx='39.960' cy='639.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle style='fill: blue;' cx='39.960' cy='564.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)))</title>
+   <circle cx='39.960' cy='489.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle style='fill: blue;' cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k)))</title>
+   <circle cx='39.960' cy='339.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle style='fill: blue;' cx='39.960' cy='264.960' r='6.000'/></g>
+  <g><title>(cat secondary_address &quot;WRITE_REQ&quot;)</title>
+   <circle cx='39.960' cy='189.960' r='6.000'/></g>
+  <g><title>&quot;START&quot;</title>
+   <circle cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((len_secondary_address len_secondary_address-0) (len_byte_data len_byte_data-0) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k) (secondary_register secondary_register) (zero_vector zero_vector) (secondary_address secondary_address))</title>
+   <text
+    x='139.920' y='77.460' style='text-anchor: middle;'>secondary</text>
+   </g>
+  <g>
+   <title>((len_secondary_address len_secondary_address) (len_byte_data len_byte_data) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k) (secondary_register secondary_register) (zero_vector zero_vector) (secondary_address secondary_address))</title>
+   <text
+    x='39.960' y='77.460' style='text-anchor: middle;'>primary</text>
+   </g>
+  <text
+   x='89.940' y='39.960'
+   style='text-anchor: middle;'>I2C-Secure 0</text></svg></div>
+
+<pre>(defskeleton I2C-Secure
+  (vars
+    (len_secondary_address len_byte_data len_secondary_address-0
+      len_byte_data-0 c_len) (byte_data cntr_init iv data) (k skey)
+    (secondary_register text) (zero_vector vector)
+    (secondary_address name))
+  (defstrand primary 10 (len_secondary_address len_secondary_address)
+    (len_byte_data len_byte_data) (byte_data byte_data)
+    (cntr_init cntr_init) (iv iv) (k k)
+    (secondary_register secondary_register) (zero_vector zero_vector)
+    (secondary_address secondary_address))
+  (defstrand secondary 10
+    (len_secondary_address len_secondary_address-0)
+    (len_byte_data len_byte_data-0) (byte_data byte_data)
+    (cntr_init cntr_init) (iv iv) (k k)
+    (secondary_register secondary_register) (zero_vector zero_vector)
+    (secondary_address secondary_address))
+  (pen-non-orig cntr_init iv k)
+  (comment &quot;[N_EXEC] Normal Execution of Protocol&quot;)
+  (traces
+    ((send &quot;START&quot;) (send (cat secondary_address &quot;WRITE_REQ&quot;))
+      (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc (enc (hash iv (hash (hash cntr_init))) k)
+            secondary_register)
+          (enc secondary_register
+            (enc (hash iv (hash (hash cntr_init))) k)))) (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc (enc (hash iv (hash (hash (hash cntr_init)))) k)
+            byte_data)
+          (enc byte_data
+            (enc (hash iv (hash (hash (hash cntr_init)))) k))))
+      (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k))))))) (enc (hash iv cntr_init) k))
+          (enc (enc (hash iv cntr_init) k)
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))))))) (recv &quot;ACK&quot;) (send &quot;STOP&quot;))
+    ((recv &quot;START&quot;) (recv (cat secondary_address &quot;WRITE_REQ&quot;))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat (enc (enc (hash iv (hash cntr_init)) k) secondary_register)
+          (enc secondary_register (enc (hash iv (hash cntr_init)) k))))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data)
+          (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat
+          (enc
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))
+                (cat len_secondary_address-0 len_byte_data-0))
+              (enc len_secondary_address-0 len_byte_data-0
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))))
+            (enc (hash iv cntr_init) k))
+          (enc (enc (hash iv cntr_init) k)
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))
+                (cat len_secondary_address-0 len_byte_data-0))
+              (enc len_secondary_address-0 len_byte_data-0
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init)))
+                          k)))))))))) (send &quot;ACK&quot;) (recv &quot;STOP&quot;)))
+  (label 0)
+  (unrealized (1 3) (1 5) (1 7))
+  (origs)
+  (comment &quot;1 in cohort - 1 not yet seen&quot;))</pre>
+
+<p id="t2">Tree <a href="#top">2</a>, POV <a href="#k2">2</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='79.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 79.920' font-size='12.000'>
+  <text
+   x='39.960' y='26.040'
+   style='font-weight: bold; text-anchor: middle; fill: blue;'
+   onclick='window.open(&quot;#k2&quot;, &quot;_self&quot;)'>2</text>
+  </svg></div>
+
+<pre>(defprotocol I2C-Secure basic
+  (defrole primary
+    (vars (secondary_address name) (secondary_register text)
+      (byte_data cntr_init iv data) (k skey)
+      (len_secondary_address len_byte_data c_len) (zero_vector vector))
+    (trace (send &quot;START&quot;) (send (cat secondary_address &quot;WRITE_REQ&quot;))
+      (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc (enc (hash iv (hash (hash cntr_init))) k)
+            secondary_register)
+          (enc secondary_register
+            (enc (hash iv (hash (hash cntr_init))) k)))) (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc (enc (hash iv (hash (hash (hash cntr_init)))) k)
+            byte_data)
+          (enc byte_data
+            (enc (hash iv (hash (hash (hash cntr_init)))) k))))
+      (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k))))))) (enc (hash iv cntr_init) k))
+          (enc (enc (hash iv cntr_init) k)
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))))))) (recv &quot;ACK&quot;) (send &quot;STOP&quot;)))
+  (defrole secondary
+    (vars (secondary_address name) (secondary_register text)
+      (byte_data cntr_init iv data) (k skey)
+      (len_secondary_address len_byte_data c_len) (zero_vector vector))
+    (trace (recv &quot;START&quot;) (recv (cat secondary_address &quot;WRITE_REQ&quot;))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat (enc (enc (hash iv (hash cntr_init)) k) secondary_register)
+          (enc secondary_register (enc (hash iv (hash cntr_init)) k))))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data)
+          (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat
+          (enc
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))))
+            (enc (hash iv cntr_init) k))
+          (enc (enc (hash iv cntr_init) k)
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init)))
+                          k)))))))))) (send &quot;ACK&quot;) (recv &quot;STOP&quot;)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (c_len atom) (vector atom)))</pre>
+
+<p id="k2">Item <a href="#t2">2</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='829.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 829.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='789.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g><title>&quot;STOP&quot;</title>
+   <circle cx='39.960' cy='789.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle style='fill: blue;' cx='39.960' cy='714.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (hash (enc zero_vector k) (enc (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k))) (cat (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k))))) (cat len_secondary_address len_byte_data)) (enc len_secondary_address len_byte_data (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k))) (cat (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k))))))) (enc (hash iv cntr_init) k)) (enc (enc (hash iv cntr_init) k) (hash (enc zero_vector k) (enc (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k))) (cat (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k))))) (cat len_secondary_address len_byte_data)) (enc len_secondary_address len_byte_data (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k))) (cat (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)))))))))</title>
+   <circle cx='39.960' cy='639.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle style='fill: blue;' cx='39.960' cy='564.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)))</title>
+   <circle cx='39.960' cy='489.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle style='fill: blue;' cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k)))</title>
+   <circle cx='39.960' cy='339.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle style='fill: blue;' cx='39.960' cy='264.960' r='6.000'/></g>
+  <g><title>(cat secondary_address &quot;WRITE_REQ&quot;)</title>
+   <circle cx='39.960' cy='189.960' r='6.000'/></g>
+  <g><title>&quot;START&quot;</title>
+   <circle cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((len_secondary_address len_secondary_address) (len_byte_data len_byte_data) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k) (secondary_register secondary_register) (zero_vector zero_vector) (secondary_address secondary_address))</title>
+   <text
+    x='39.960' y='77.460' style='text-anchor: middle;'>primary</text>
+   </g>
+  <text
+   x='39.960' y='39.960'
+   style='text-anchor: middle;'>I2C-Secure 2</text></svg></div>
+
+<pre>(defskeleton I2C-Secure
+  (vars (len_secondary_address len_byte_data c_len)
+    (byte_data cntr_init iv data) (k skey) (secondary_register text)
+    (zero_vector vector) (secondary_address name))
+  (defstrand primary 10 (len_secondary_address len_secondary_address)
+    (len_byte_data len_byte_data) (byte_data byte_data)
+    (cntr_init cntr_init) (iv iv) (k k)
+    (secondary_register secondary_register) (zero_vector zero_vector)
+    (secondary_address secondary_address))
+  (pen-non-orig cntr_init iv k)
+  (comment &quot;[P_POV] Primary&apos;s Perspective&quot;)
+  (traces
+    ((send &quot;START&quot;) (send (cat secondary_address &quot;WRITE_REQ&quot;))
+      (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc (enc (hash iv (hash (hash cntr_init))) k)
+            secondary_register)
+          (enc secondary_register
+            (enc (hash iv (hash (hash cntr_init))) k)))) (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc (enc (hash iv (hash (hash (hash cntr_init)))) k)
+            byte_data)
+          (enc byte_data
+            (enc (hash iv (hash (hash (hash cntr_init)))) k))))
+      (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k))))))) (enc (hash iv cntr_init) k))
+          (enc (enc (hash iv cntr_init) k)
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))))))) (recv &quot;ACK&quot;) (send &quot;STOP&quot;)))
+  (label 2)
+  (realized)
+  (shape)
+  (maps
+    ((0)
+      ((zero_vector zero_vector) (secondary_address secondary_address)
+        (secondary_register secondary_register) (byte_data byte_data)
+        (cntr_init cntr_init) (iv iv) (k k)
+        (len_secondary_address len_secondary_address)
+        (len_byte_data len_byte_data))))
+  (origs))</pre>
+
+<p id="t3">Tree <a href="#top">3</a>, POV <a href="#k3">3</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='79.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 79.920' font-size='12.000'>
+  <text
+   x='39.960' y='26.040' style='text-anchor: middle; fill: black;'
+   onclick='window.open(&quot;#k3&quot;, &quot;_self&quot;)'>3</text>
+  </svg></div>
+
+<pre>(defprotocol I2C-Secure basic
+  (defrole primary
+    (vars (secondary_address name) (secondary_register text)
+      (byte_data cntr_init iv data) (k skey)
+      (len_secondary_address len_byte_data c_len) (zero_vector vector))
+    (trace (send &quot;START&quot;) (send (cat secondary_address &quot;WRITE_REQ&quot;))
+      (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc (enc (hash iv (hash (hash cntr_init))) k)
+            secondary_register)
+          (enc secondary_register
+            (enc (hash iv (hash (hash cntr_init))) k)))) (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc (enc (hash iv (hash (hash (hash cntr_init)))) k)
+            byte_data)
+          (enc byte_data
+            (enc (hash iv (hash (hash (hash cntr_init)))) k))))
+      (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k))))))) (enc (hash iv cntr_init) k))
+          (enc (enc (hash iv cntr_init) k)
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))))))) (recv &quot;ACK&quot;) (send &quot;STOP&quot;)))
+  (defrole secondary
+    (vars (secondary_address name) (secondary_register text)
+      (byte_data cntr_init iv data) (k skey)
+      (len_secondary_address len_byte_data c_len) (zero_vector vector))
+    (trace (recv &quot;START&quot;) (recv (cat secondary_address &quot;WRITE_REQ&quot;))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat (enc (enc (hash iv (hash cntr_init)) k) secondary_register)
+          (enc secondary_register (enc (hash iv (hash cntr_init)) k))))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data)
+          (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat
+          (enc
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))))
+            (enc (hash iv cntr_init) k))
+          (enc (enc (hash iv cntr_init) k)
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init)))
+                          k)))))))))) (send &quot;ACK&quot;) (recv &quot;STOP&quot;)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (c_len atom) (vector atom)))</pre>
+
+<p id="k3">Item <a href="#t3">3</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='829.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 829.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='789.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g><title>&quot;STOP&quot;</title>
+   <circle style='fill: blue;' cx='39.960' cy='789.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle cx='39.960' cy='714.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (hash (enc zero_vector k) (enc (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k))) (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))) (cat len_secondary_address len_byte_data)) (enc len_secondary_address len_byte_data (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k))) (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))))) (enc (hash iv cntr_init) k)) (enc (enc (hash iv cntr_init) k) (hash (enc zero_vector k) (enc (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k))) (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))) (cat len_secondary_address len_byte_data)) (enc len_secondary_address len_byte_data (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k))) (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)))))))))</title>
+   <circle style='fill: red;' cx='39.960' cy='639.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle cx='39.960' cy='564.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)))</title>
+   <circle style='fill: red;' cx='39.960' cy='489.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k)))</title>
+   <circle style='fill: red;' cx='39.960' cy='339.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle cx='39.960' cy='264.960' r='6.000'/></g>
+  <g><title>(cat secondary_address &quot;WRITE_REQ&quot;)</title>
+   <circle style='fill: blue;' cx='39.960' cy='189.960' r='6.000'/></g>
+  <g><title>&quot;START&quot;</title>
+   <circle style='fill: blue;' cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((len_secondary_address len_secondary_address) (len_byte_data len_byte_data) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k) (secondary_register secondary_register) (zero_vector zero_vector) (secondary_address secondary_address))</title>
+   <text
+    x='39.960' y='77.460' style='text-anchor: middle;'>secondary</text>
+   </g>
+  <text
+   x='39.960' y='39.960'
+   style='text-anchor: middle;'>I2C-Secure 3</text></svg></div>
+
+<pre>(defskeleton I2C-Secure
+  (vars (len_secondary_address len_byte_data c_len)
+    (byte_data cntr_init iv data) (k skey) (secondary_register text)
+    (zero_vector vector) (secondary_address name))
+  (defstrand secondary 10 (len_secondary_address len_secondary_address)
+    (len_byte_data len_byte_data) (byte_data byte_data)
+    (cntr_init cntr_init) (iv iv) (k k)
+    (secondary_register secondary_register) (zero_vector zero_vector)
+    (secondary_address secondary_address))
+  (pen-non-orig cntr_init iv k)
+  (comment &quot;[S_POV] Secondary&apos;s Perspective&quot;)
+  (traces
+    ((recv &quot;START&quot;) (recv (cat secondary_address &quot;WRITE_REQ&quot;))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat (enc (enc (hash iv (hash cntr_init)) k) secondary_register)
+          (enc secondary_register (enc (hash iv (hash cntr_init)) k))))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data)
+          (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat
+          (enc
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))))
+            (enc (hash iv cntr_init) k))
+          (enc (enc (hash iv cntr_init) k)
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init)))
+                          k)))))))))) (send &quot;ACK&quot;) (recv &quot;STOP&quot;)))
+  (label 3)
+  (unrealized (0 3) (0 5) (0 7))
+  (origs)
+  (comment &quot;1 in cohort - 1 not yet seen&quot;))</pre>
+
+<p id="t5">Tree <a href="#top">5</a>, POV <a href="#k5">5</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='79.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 79.920' font-size='12.000'>
+  <text
+   x='39.960' y='26.040' style='text-anchor: middle; fill: black;'
+   onclick='window.open(&quot;#k5&quot;, &quot;_self&quot;)'>5</text>
+  </svg></div>
+
+<pre>(defprotocol I2C-Secure basic
+  (defrole primary
+    (vars (secondary_address name) (secondary_register text)
+      (byte_data cntr_init iv data) (k skey)
+      (len_secondary_address len_byte_data c_len) (zero_vector vector))
+    (trace (send &quot;START&quot;) (send (cat secondary_address &quot;WRITE_REQ&quot;))
+      (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc (enc (hash iv (hash (hash cntr_init))) k)
+            secondary_register)
+          (enc secondary_register
+            (enc (hash iv (hash (hash cntr_init))) k)))) (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc (enc (hash iv (hash (hash (hash cntr_init)))) k)
+            byte_data)
+          (enc byte_data
+            (enc (hash iv (hash (hash (hash cntr_init)))) k))))
+      (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k))))))) (enc (hash iv cntr_init) k))
+          (enc (enc (hash iv cntr_init) k)
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))))))) (recv &quot;ACK&quot;) (send &quot;STOP&quot;)))
+  (defrole secondary
+    (vars (secondary_address name) (secondary_register text)
+      (byte_data cntr_init iv data) (k skey)
+      (len_secondary_address len_byte_data c_len) (zero_vector vector))
+    (trace (recv &quot;START&quot;) (recv (cat secondary_address &quot;WRITE_REQ&quot;))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat (enc (enc (hash iv (hash cntr_init)) k) secondary_register)
+          (enc secondary_register (enc (hash iv (hash cntr_init)) k))))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data)
+          (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat
+          (enc
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))))
+            (enc (hash iv cntr_init) k))
+          (enc (enc (hash iv cntr_init) k)
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init)))
+                          k)))))))))) (send &quot;ACK&quot;) (recv &quot;STOP&quot;)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (c_len atom) (vector atom)))</pre>
+
+<p id="k5">Item <a href="#t5">5</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='179.880pt' height='829.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 179.880 829.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='139.920' y1='114.960' x2='139.920' y2='789.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='789.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g><title>&quot;STOP&quot;</title>
+   <circle style='fill: blue;' cx='139.920' cy='789.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle cx='139.920' cy='714.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (hash (enc zero_vector k) (enc (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k))) (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))) (cat len_secondary_address-0 len_byte_data-0)) (enc len_secondary_address-0 len_byte_data-0 (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k))) (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))))) (enc (hash iv cntr_init) k)) (enc (enc (hash iv cntr_init) k) (hash (enc zero_vector k) (enc (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k))) (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))) (cat len_secondary_address-0 len_byte_data-0)) (enc len_secondary_address-0 len_byte_data-0 (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k))) (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)))))))))</title>
+   <circle style='fill: red;' cx='139.920' cy='639.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle cx='139.920' cy='564.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)))</title>
+   <circle style='fill: red;' cx='139.920' cy='489.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle cx='139.920' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k)))</title>
+   <circle style='fill: red;' cx='139.920' cy='339.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle cx='139.920' cy='264.960' r='6.000'/></g>
+  <g><title>(cat secondary_address &quot;WRITE_REQ&quot;)</title>
+   <circle style='fill: blue;' cx='139.920' cy='189.960' r='6.000'/></g>
+  <g><title>&quot;START&quot;</title>
+   <circle style='fill: blue;' cx='139.920' cy='114.960' r='6.000'/></g>
+  <g><title>&quot;STOP&quot;</title>
+   <circle cx='39.960' cy='789.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle style='fill: blue;' cx='39.960' cy='714.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (hash (enc zero_vector k) (enc (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k))) (cat (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k))))) (cat len_secondary_address len_byte_data)) (enc len_secondary_address len_byte_data (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k))) (cat (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k))))))) (enc (hash iv cntr_init) k)) (enc (enc (hash iv cntr_init) k) (hash (enc zero_vector k) (enc (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k))) (cat (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k))))) (cat len_secondary_address len_byte_data)) (enc len_secondary_address len_byte_data (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k))) (cat (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)))))))))</title>
+   <circle cx='39.960' cy='639.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle style='fill: blue;' cx='39.960' cy='564.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)))</title>
+   <circle cx='39.960' cy='489.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle style='fill: blue;' cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k)))</title>
+   <circle cx='39.960' cy='339.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle style='fill: blue;' cx='39.960' cy='264.960' r='6.000'/></g>
+  <g><title>(cat secondary_address &quot;WRITE_REQ&quot;)</title>
+   <circle cx='39.960' cy='189.960' r='6.000'/></g>
+  <g><title>&quot;START&quot;</title>
+   <circle cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((len_secondary_address len_secondary_address-0) (len_byte_data len_byte_data-0) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k) (secondary_register secondary_register) (zero_vector zero_vector) (secondary_address secondary_address))</title>
+   <text
+    x='139.920' y='77.460' style='text-anchor: middle;'>secondary</text>
+   </g>
+  <g>
+   <title>((len_secondary_address len_secondary_address) (len_byte_data len_byte_data) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k) (secondary_register secondary_register) (zero_vector zero_vector) (secondary_address secondary_address))</title>
+   <text
+    x='39.960' y='77.460' style='text-anchor: middle;'>primary</text>
+   </g>
+  <text
+   x='89.940' y='39.960'
+   style='text-anchor: middle;'>I2C-Secure 5</text></svg></div>
+
+<pre>(defskeleton I2C-Secure
+  (vars
+    (len_secondary_address len_byte_data len_secondary_address-0
+      len_byte_data-0 c_len) (byte_data cntr_init iv data) (k skey)
+    (secondary_register text) (zero_vector vector)
+    (secondary_address name))
+  (defstrand primary 10 (len_secondary_address len_secondary_address)
+    (len_byte_data len_byte_data) (byte_data byte_data)
+    (cntr_init cntr_init) (iv iv) (k k)
+    (secondary_register secondary_register) (zero_vector zero_vector)
+    (secondary_address secondary_address))
+  (defstrand secondary 10
+    (len_secondary_address len_secondary_address-0)
+    (len_byte_data len_byte_data-0) (byte_data byte_data)
+    (cntr_init cntr_init) (iv iv) (k k)
+    (secondary_register secondary_register) (zero_vector zero_vector)
+    (secondary_address secondary_address))
+  (pen-non-orig iv k)
+  (comment
+    &quot;[PS_POV_CNTR_NOTFRESH] Secondary&apos;s Perspective: cntr_init is not fresh&quot;)
+  (traces
+    ((send &quot;START&quot;) (send (cat secondary_address &quot;WRITE_REQ&quot;))
+      (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc (enc (hash iv (hash (hash cntr_init))) k)
+            secondary_register)
+          (enc secondary_register
+            (enc (hash iv (hash (hash cntr_init))) k)))) (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc (enc (hash iv (hash (hash (hash cntr_init)))) k)
+            byte_data)
+          (enc byte_data
+            (enc (hash iv (hash (hash (hash cntr_init)))) k))))
+      (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k))))))) (enc (hash iv cntr_init) k))
+          (enc (enc (hash iv cntr_init) k)
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))))))) (recv &quot;ACK&quot;) (send &quot;STOP&quot;))
+    ((recv &quot;START&quot;) (recv (cat secondary_address &quot;WRITE_REQ&quot;))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat (enc (enc (hash iv (hash cntr_init)) k) secondary_register)
+          (enc secondary_register (enc (hash iv (hash cntr_init)) k))))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data)
+          (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat
+          (enc
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))
+                (cat len_secondary_address-0 len_byte_data-0))
+              (enc len_secondary_address-0 len_byte_data-0
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))))
+            (enc (hash iv cntr_init) k))
+          (enc (enc (hash iv cntr_init) k)
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))
+                (cat len_secondary_address-0 len_byte_data-0))
+              (enc len_secondary_address-0 len_byte_data-0
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init)))
+                          k)))))))))) (send &quot;ACK&quot;) (recv &quot;STOP&quot;)))
+  (label 5)
+  (unrealized (1 3) (1 5) (1 7))
+  (origs)
+  (comment &quot;1 in cohort - 1 not yet seen&quot;))</pre>
+
+<p id="t7">Tree <a href="#top">7</a>, POV <a href="#k7">7</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='79.920pt' height='79.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 79.920 79.920' font-size='12.000'>
+  <text
+   x='39.960' y='26.040' style='text-anchor: middle; fill: black;'
+   onclick='window.open(&quot;#k7&quot;, &quot;_self&quot;)'>7</text>
+  </svg></div>
+
+<pre>(defprotocol I2C-Secure basic
+  (defrole primary
+    (vars (secondary_address name) (secondary_register text)
+      (byte_data cntr_init iv data) (k skey)
+      (len_secondary_address len_byte_data c_len) (zero_vector vector))
+    (trace (send &quot;START&quot;) (send (cat secondary_address &quot;WRITE_REQ&quot;))
+      (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc (enc (hash iv (hash (hash cntr_init))) k)
+            secondary_register)
+          (enc secondary_register
+            (enc (hash iv (hash (hash cntr_init))) k)))) (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc (enc (hash iv (hash (hash (hash cntr_init)))) k)
+            byte_data)
+          (enc byte_data
+            (enc (hash iv (hash (hash (hash cntr_init)))) k))))
+      (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k))))))) (enc (hash iv cntr_init) k))
+          (enc (enc (hash iv cntr_init) k)
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))))))) (recv &quot;ACK&quot;) (send &quot;STOP&quot;)))
+  (defrole secondary
+    (vars (secondary_address name) (secondary_register text)
+      (byte_data cntr_init iv data) (k skey)
+      (len_secondary_address len_byte_data c_len) (zero_vector vector))
+    (trace (recv &quot;START&quot;) (recv (cat secondary_address &quot;WRITE_REQ&quot;))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat (enc (enc (hash iv (hash cntr_init)) k) secondary_register)
+          (enc secondary_register (enc (hash iv (hash cntr_init)) k))))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data)
+          (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat
+          (enc
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))))
+            (enc (hash iv cntr_init) k))
+          (enc (enc (hash iv cntr_init) k)
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init)))
+                          k)))))))))) (send &quot;ACK&quot;) (recv &quot;STOP&quot;)))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (c_len atom) (vector atom)))</pre>
+
+<p id="k7">Item <a href="#t7">7</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='179.880pt' height='829.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 179.880 829.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='139.920' y1='114.960' x2='139.920' y2='789.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='789.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g><title>&quot;STOP&quot;</title>
+   <circle style='fill: blue;' cx='139.920' cy='789.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle cx='139.920' cy='714.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (hash (enc zero_vector k) (enc (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k))) (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))) (cat len_secondary_address-0 len_byte_data-0)) (enc len_secondary_address-0 len_byte_data-0 (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k))) (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))))) (enc (hash iv cntr_init) k)) (enc (enc (hash iv cntr_init) k) (hash (enc zero_vector k) (enc (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k))) (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))) (cat len_secondary_address-0 len_byte_data-0)) (enc len_secondary_address-0 len_byte_data-0 (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k))) (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)))))))))</title>
+   <circle style='fill: red;' cx='139.920' cy='639.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle cx='139.920' cy='564.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash cntr_init))) k)))</title>
+   <circle style='fill: red;' cx='139.920' cy='489.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle cx='139.920' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc (hash iv (hash cntr_init)) k) secondary_register) (enc secondary_register (enc (hash iv (hash cntr_init)) k)))</title>
+   <circle style='fill: red;' cx='139.920' cy='339.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle cx='139.920' cy='264.960' r='6.000'/></g>
+  <g><title>(cat secondary_address &quot;WRITE_REQ&quot;)</title>
+   <circle style='fill: blue;' cx='139.920' cy='189.960' r='6.000'/></g>
+  <g><title>&quot;START&quot;</title>
+   <circle style='fill: blue;' cx='139.920' cy='114.960' r='6.000'/></g>
+  <g><title>&quot;STOP&quot;</title>
+   <circle cx='39.960' cy='789.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle style='fill: blue;' cx='39.960' cy='714.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (hash (enc zero_vector k) (enc (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k))) (cat (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k))))) (cat len_secondary_address len_byte_data)) (enc len_secondary_address len_byte_data (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k))) (cat (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k))))))) (enc (hash iv cntr_init) k)) (enc (enc (hash iv cntr_init) k) (hash (enc zero_vector k) (enc (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k))) (cat (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k))))) (cat len_secondary_address len_byte_data)) (enc len_secondary_address len_byte_data (hash (enc zero_vector k) (enc (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)) (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k)))) (enc (hash (enc zero_vector k) (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k))) (cat (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)))))))))</title>
+   <circle cx='39.960' cy='639.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle style='fill: blue;' cx='39.960' cy='564.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc (hash iv (hash (hash (hash cntr_init)))) k) byte_data) (enc byte_data (enc (hash iv (hash (hash (hash cntr_init)))) k)))</title>
+   <circle cx='39.960' cy='489.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle style='fill: blue;' cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(cat (enc (enc (hash iv (hash (hash cntr_init))) k) secondary_register) (enc secondary_register (enc (hash iv (hash (hash cntr_init))) k)))</title>
+   <circle cx='39.960' cy='339.960' r='6.000'/></g>
+  <g><title>&quot;ACK&quot;</title>
+   <circle style='fill: blue;' cx='39.960' cy='264.960' r='6.000'/></g>
+  <g><title>(cat secondary_address &quot;WRITE_REQ&quot;)</title>
+   <circle cx='39.960' cy='189.960' r='6.000'/></g>
+  <g><title>&quot;START&quot;</title>
+   <circle cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((len_secondary_address len_secondary_address-0) (len_byte_data len_byte_data-0) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k) (secondary_register secondary_register) (zero_vector zero_vector) (secondary_address secondary_address))</title>
+   <text
+    x='139.920' y='77.460' style='text-anchor: middle;'>secondary</text>
+   </g>
+  <g>
+   <title>((len_secondary_address len_secondary_address) (len_byte_data len_byte_data) (byte_data byte_data) (cntr_init cntr_init) (iv iv) (k k) (secondary_register secondary_register) (zero_vector zero_vector) (secondary_address secondary_address))</title>
+   <text
+    x='39.960' y='77.460' style='text-anchor: middle;'>primary</text>
+   </g>
+  <text
+   x='89.940' y='39.960'
+   style='text-anchor: middle;'>I2C-Secure 7</text></svg></div>
+
+<pre>(defskeleton I2C-Secure
+  (vars
+    (len_secondary_address len_byte_data len_secondary_address-0
+      len_byte_data-0 c_len) (byte_data cntr_init iv data) (k skey)
+    (secondary_register text) (zero_vector vector)
+    (secondary_address name))
+  (defstrand primary 10 (len_secondary_address len_secondary_address)
+    (len_byte_data len_byte_data) (byte_data byte_data)
+    (cntr_init cntr_init) (iv iv) (k k)
+    (secondary_register secondary_register) (zero_vector zero_vector)
+    (secondary_address secondary_address))
+  (defstrand secondary 10
+    (len_secondary_address len_secondary_address-0)
+    (len_byte_data len_byte_data-0) (byte_data byte_data)
+    (cntr_init cntr_init) (iv iv) (k k)
+    (secondary_register secondary_register) (zero_vector zero_vector)
+    (secondary_address secondary_address))
+  (pen-non-orig iv k)
+  (comment
+    &quot;[PS_POV_CNTR&amp;K_NOTFRESH] Secondary&apos;s Perspective: cntr_init is not fresh&quot;)
+  (traces
+    ((send &quot;START&quot;) (send (cat secondary_address &quot;WRITE_REQ&quot;))
+      (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc (enc (hash iv (hash (hash cntr_init))) k)
+            secondary_register)
+          (enc secondary_register
+            (enc (hash iv (hash (hash cntr_init))) k)))) (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc (enc (hash iv (hash (hash (hash cntr_init)))) k)
+            byte_data)
+          (enc byte_data
+            (enc (hash iv (hash (hash (hash cntr_init)))) k))))
+      (recv &quot;ACK&quot;)
+      (send
+        (cat
+          (enc
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k))))))) (enc (hash iv cntr_init) k))
+          (enc (enc (hash iv cntr_init) k)
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))
+                (cat len_secondary_address len_byte_data))
+              (enc len_secondary_address len_byte_data
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash (hash cntr_init)))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash (hash cntr_init))) k)))
+                    (cat
+                      (enc
+                        (enc (hash iv (hash (hash (hash cntr_init)))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash (hash cntr_init))))
+                          k)))))))))) (recv &quot;ACK&quot;) (send &quot;STOP&quot;))
+    ((recv &quot;START&quot;) (recv (cat secondary_address &quot;WRITE_REQ&quot;))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat (enc (enc (hash iv (hash cntr_init)) k) secondary_register)
+          (enc secondary_register (enc (hash iv (hash cntr_init)) k))))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat (enc (enc (hash iv (hash (hash cntr_init))) k) byte_data)
+          (enc byte_data (enc (hash iv (hash (hash cntr_init))) k))))
+      (send &quot;ACK&quot;)
+      (recv
+        (cat
+          (enc
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))
+                (cat len_secondary_address-0 len_byte_data-0))
+              (enc len_secondary_address-0 len_byte_data-0
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))))
+            (enc (hash iv cntr_init) k))
+          (enc (enc (hash iv cntr_init) k)
+            (hash (enc zero_vector k)
+              (enc
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init))) k)))))
+                (cat len_secondary_address-0 len_byte_data-0))
+              (enc len_secondary_address-0 len_byte_data-0
+                (hash (enc zero_vector k)
+                  (enc
+                    (enc (enc (hash iv (hash (hash cntr_init))) k)
+                      byte_data)
+                    (enc byte_data
+                      (enc (hash iv (hash (hash cntr_init))) k))
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k))))
+                  (enc
+                    (hash (enc zero_vector k)
+                      (enc (enc (hash iv (hash cntr_init)) k)
+                        secondary_register)
+                      (enc secondary_register
+                        (enc (hash iv (hash cntr_init)) k)))
+                    (cat
+                      (enc (enc (hash iv (hash (hash cntr_init))) k)
+                        byte_data)
+                      (enc byte_data
+                        (enc (hash iv (hash (hash cntr_init)))
+                          k)))))))))) (send &quot;ACK&quot;) (recv &quot;STOP&quot;)))
+  (label 7)
+  (unrealized (1 3) (1 5) (1 7))
+  (origs)
+  (comment &quot;1 in cohort - 1 not yet seen&quot;))</pre>
+
+</body>
+</html>
