@@ -82,9 +82,9 @@
             (send 
                 (GCM-Block-N 
                     iv 
-                    (hash (hash cntr_init))                                                ; cntr_2 - hash chain
+                    (hash (hash cntr_init))                                             ; cntr_2 - hash chain
                     byte_data 
-                    (GCM-Block-One iv (hash cntr_init) secondary_register k)               ; mulH_prev
+                    (GCM-Block-One iv (hash cntr_init) secondary_register k)            ; mulH_prev
                     k
                 )
             )                                                                           ; Primary sends data to be written to register 
@@ -94,9 +94,9 @@
                 (GCM-Block-Tag 
                     (GCM-Block-N                                                        ; mulH_prev
                         iv 
-                        (hash (hash cntr_init))                                            ; cntr_2 - hash chain
+                        (hash (hash cntr_init))                                         ; cntr_2 - hash chain
                         byte_data 
-                        (GCM-Block-One iv (hash cntr_init) secondary_register k)           ; mulH_prev_prev
+                        (GCM-Block-One iv (hash cntr_init) secondary_register k)        ; mulH_prev_prev
                         k
                     ) 
                     (cat len_secondary_address len_byte_data)                                  ; c_len
@@ -121,14 +121,14 @@
             (recv "START")                                                              ; Primary takes control of the bus                            
             (recv (cat secondary_address "WRITE_REQ"))                                  ; Primary sends a write request for a specific secondary
             (send "ACK")                                                                ; Secondary acks
-            (recv (GCM-Block-One iv (hash cntr_init) secondary_register k))                ; Primary sends a specific register it wishes to write to write to on the secondary
+            (recv (GCM-Block-One iv (hash cntr_init) secondary_register k))             ; Primary sends a specific register it wishes to write to write to on the secondary
             (send "ACK")                                                                ; Secondary acks
             (recv 
                 (GCM-Block-N 
                     iv 
-                    (hash (hash cntr_init))                                                ; cntr_2 - hash chain
+                    (hash (hash cntr_init))                                             ; cntr_2 - hash chain
                     byte_data 
-                    (GCM-Block-One iv (hash cntr_init) secondary_register k)               ; mulH_prev
+                    (GCM-Block-One iv (hash cntr_init) secondary_register k)            ; mulH_prev
                     k
                 )
             )                                                                           ; Primary sends data to be written to register 
@@ -138,9 +138,9 @@
                 (GCM-Block-Tag 
                     (GCM-Block-N                                                        ; mulH_prev
                         iv 
-                        (hash (hash cntr_init))                                            ; cntr_2 - hash chain
+                        (hash (hash cntr_init))                                         ; cntr_2 - hash chain
                         byte_data 
-                        (GCM-Block-One iv (hash cntr_init) secondary_register k)           ; mulH_prev_prev
+                        (GCM-Block-One iv (hash cntr_init) secondary_register k)        ; mulH_prev_prev
                         k
                     ) 
                     (cat len_secondary_address len_byte_data)                                                   ; c_len -- for now we can represent the length of the data as a cat of the ciphertext
@@ -174,6 +174,7 @@
     ; Assumptions
     (pen-non-orig k iv cntr_init)  ; Assume the advesary doesn't know key, iv, or the init-counter value
 
+
     (comment "[P_POV] Primary's Perspective")
 )
 
@@ -194,7 +195,6 @@
 
     ; Assumptions
     (pen-non-orig k iv)        ; Assume the advesary doesn't know key, iv
-                               ; Assume tat the advesary does know the starting cntr (power cycle the device)
 
     (comment "[PS_POV_CNTR_NOTFRESH] Secondary's Perspective: cntr_init is not fresh")
 )
@@ -206,10 +206,11 @@
 
     ; Assumptions
     (pen-non-orig k iv)        ; Assume the advesary doesn't know key, iv
-                               ; Assume tat the advesary does know the starting cntr (power cycle the device)
 
     (comment "[PS_POV_CNTR&K_NOTFRESH] Secondary's Perspective: cntr_init is not fresh")
 )
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; I2C Implementation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; (defprotocol I2C basic
 ;;     (defrole primary

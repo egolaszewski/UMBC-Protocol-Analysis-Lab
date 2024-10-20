@@ -28,6 +28,7 @@ Calculate H (factor)
 
 ### (Website) AES-GCM Issues Explained:
 - https://soatok.blog/2020/05/13/why-aes-gcm-sucks/
+- https://crypto.stackexchange.com/questions/18420/disadvantage-aes-gcm (attack vectors)
 
 ## Assumptions
 - Basic I2C secure protocol
@@ -35,12 +36,11 @@ Calculate H (factor)
 - "One problem that arises when using this kind of networks is the secrecy and privacy of the system. In some critical control applications, knowing that data is coming from the sensor and not from a malicious user is critical" 
 - Authenication
     - knowing that 'the sensor is really what we thing" 
-    - 
 - Encryption
     - Making converations secret 
 - Claims that because we are using "field bus" protocols, that no matter how many security layers  we put on our Internet connections, an intruder can bypass them by gaining physical access"
+- the length of the ciphertext is known by the adversary post message being sent (or intercepted)
 
-- the length of the ciphertext is known by the advesary post message being sent (or intercepted)
 
 # CPSA Simple Reference:
 alg ← basic
@@ -69,9 +69,12 @@ Explained Output:
 
 # I2C-Secure Issues observed
 Things to talk about:
-- The avesary can know about the registers of a device basesd on the device schema
-- The slave address is known to the world
+- The avesary can know about the registers of a device (they can research this hardware info -- not to mention the address range is [0x00, 0xff])
+- The secondary address is known to the world
 - secondary-register-0? CPSA mentions that this value can me manipuated by the network??
-- I customized the make file to open the shapes file (use: make open)
 - N_EXEC, P_POV, S_POV can be used as search terms in the shapes file
--
+- MAC "tag" is 128 bits wide
+- Crpytoanalysis: The total amount of data allowed to encrypt on a single key is limited by 2^64 blocks
+    - Since the primary commands are still unencrypted and can be issued by anyone on the network, an adversary can just continously read data until we achieve the 2^64 blocks
+    - Cycling attacks against GCM: https://eprint.iacr.org/2011/202.pdf
+- The length of the ciphertext is known by the adversary 
