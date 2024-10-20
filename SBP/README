@@ -1,20 +1,21 @@
-Last update: 3/29/2024
+Last update: 8/1/2024
 
-The contents of this directory are compiled with with CPSA Version 4.4.2 using
+The contents of this directory are compiled with with CPSA Version 4.4.5 using
 the provided Makefile. Compiling the contents requires at least 2 GB of free RAM.
-
-To facilitate termination, we divide the mTLS 1.3 model into two files, one
-corresponding to each perspective (client or server/proxy).
 
 Brief descriptions of each model in this directory are below.
 
-tls12_ca.scm: baseline "pre-SBP" model using TLS 1.2.
+tls12_ca.scm: baseline "pre-SBP" model using TLS 1.2 with RSA key-exchange.
+tls12edh_ca.scm: pre-SBP model using TLS 1.2 with DH key-exchange.
 tls13_ca.scm: pre-SBP model using TLS 1.3.
-tls12_sbp.scm: model of the original SBP using TLS 1.2.
+
+tls12_sbp.scm: model of the original SBP using TLS 1.2 with RSA key-exchange.
+tls12edh_sbp.scom: model of a custom SBP using TLS 1.2 with DH key-exchange.
 tls13_sbp.scm: model of a custom SBP using TLS 1.3.
-mtls12_sbp.scm: model of a custom SBP using mTLS 1.2.
-mtls13_sbp_client.scm: client perspective of custom SBP using mTLS 1.3.
-mtls13_sbp_server.scm: server perspective of custom SBP using mTLS 1.3.
+
+mtls12_sbp.scm: model of a custom SBP using mTLS 1.2 with RSA key-exchange.
+mtls12edh_sbp.scm: model of a custom SBP using mTLS 1.2 with DH key-exchange.
+mtls13_sbp.scm: model of a custom SBP using mTLS 1.3.
 
 For convenience, the contents of this directory are precompiled. For each
 model, there are four files:
@@ -24,7 +25,8 @@ model, there are four files:
 *_shapes.txt: pruned output for the model that only includes shapes.
 *.xhtml: visualizations of all skeletons for a model.
 *_shapes.xhtml: visualizations of realized skeletons (shapes) for the model.
-
-We recommend inspecting the graphical shapes for any models of interest.
+s
+We recommend inspecting the graphical shapes for any models of interest in
+the model's corresponding *_shapes.xhtml files.
 
 CPSA 4 is available at https://github.com/mitre/cpsaexp

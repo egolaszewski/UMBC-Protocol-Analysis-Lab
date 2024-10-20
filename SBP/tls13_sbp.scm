@@ -241,6 +241,24 @@
 
 (defgoal ca
   (forall
+    ((any mesg) (cookie data) (response httpdata) (request httpreq)
+      (p password) (cr sr random32) (spk akey) (x rndx) (u s ca name)
+      (cookiestor locn) (z z-0 strd))
+    (implies
+      (and (p "clienta" z 9) (p "" z-0 2) (p "clienta" "any" z any)
+        (p "clienta" "cookie" z cookie)
+        (p "clienta" "response" z response) (p "clienta" "spk" z spk)
+        (p "clienta" "request" z request) (p "clienta" "p" z p)
+        (p "clienta" "cr" z cr) (p "clienta" "sr" z sr)
+        (p "clienta" "x" z x) (p "clienta" "u" z u)
+        (p "clienta" "s" z s) (p "clienta" "ca" z ca)
+        (p "clienta" "cookiestor" z cookiestor) (p "" "x" z-0 cookie)
+        (non (invk spk)) (non (privk ca)) (pnon p) (uniq sr)
+        (uniq-at cr z 0) (ugen-at x z 0))
+      (false))))
+
+(defgoal ca
+  (forall
    ((z strd) (cookie data) (u s ca name) (spk akey) (cr sr random32) (ppk skey)
     (x rndx) (y expt))
    (implies
