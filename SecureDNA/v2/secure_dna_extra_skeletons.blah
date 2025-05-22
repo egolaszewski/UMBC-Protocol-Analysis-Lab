@@ -1,0 +1,49 @@
+
+
+;; Sequence listener synth-client perspective.
+(defskeleton secure-dna-query
+  (vars
+    (ks-ch chan)
+    (c-id k-id m-root i-root name)
+    (r-s random256)
+    (seq blind rndx)
+  )
+  (defstrandmax synth-client-2-ks
+    (ks-ch ks-ch)
+    (c-id c-id) (k-id k-id) (m-root m-root) (i-root i-root)
+    (r-s r-s)
+    (seq seq) (blind blind)
+  )
+  (deflistener (exp (gen) seq))
+  (auth ks-ch)
+  (conf ks-ch)
+  (non-orig (privk c-id) (privk k-id) (privk m-root) (privk i-root))
+  (uniq-orig r-s)
+  (uniq-gen seq blind)
+  (facts (neq seq blind))
+)
+
+;; Sequence listener key-server perspective.
+(defskeleton secure-dna-query
+  (vars
+    (ks-ch chan)
+    (c-id k-id m-root i-root name)
+    (r-k random256)
+    (t cookie)
+    (sign seq rndx)
+  )
+  (defstrandmax key-server
+    (ks-ch ks-ch)
+    (c-id c-id) (k-id k-id) (m-root m-root) (i-root i-root)
+    (r-k r-k)
+    (t t)
+    (sign sign)
+  )
+  (deflistener (exp (gen) seq))
+  (auth ks-ch)
+  (conf ks-ch)
+  (non-orig (privk c-id) (privk k-id) (privk m-root) (privk i-root))
+  (uniq-orig r-k)
+  (uniq-orig t)
+  (uniq-gen sign seq)
+)
