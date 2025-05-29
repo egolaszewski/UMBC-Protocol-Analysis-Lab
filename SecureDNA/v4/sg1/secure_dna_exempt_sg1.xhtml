@@ -1,0 +1,496 @@
+<?xml version="1.0"?>
+<!-- CPSA 4.4.5 -->
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+ <title>Secure DNA Query Protocol without Cert. Chaining</title>
+ <meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+ <style>
+  svg.diagram { border-width: 1px; border-style: solid }
+ </style>
+</head>
+<body>
+
+<pre>(herald &quot;Secure DNA Query Protocol without Cert. Chaining&quot;
+  (comment &quot;This model does not feature any certificate chaining.&quot;)
+  (algebra diffie-hellman) (limit 50000))
+(comment &quot;CPSA 4.4.5&quot;)
+(comment &quot;All input read from secure_dna_exempt_sg1.scm&quot;)
+(comment &quot;Step count limited to 50000&quot;)</pre>
+
+<p id="t0">Tree 0, POV <a href="#k0">0</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='129.840pt' height='79.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 129.840 79.920' font-size='12.000'>
+  <text
+   x='89.880' y='26.040' style='text-anchor: middle; fill: red;'
+   onclick='window.open(&quot;#k1&quot;, &quot;_self&quot;)'>1</text>
+  <line
+   x1='39.960' y1='39.960' x2='89.880' y2='39.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <text
+   x='39.960' y='26.040' style='text-anchor: middle; fill: red;'
+   onclick='window.open(&quot;#k0&quot;, &quot;_self&quot;)'>0</text>
+  </svg></div>
+
+<pre>(defprotocol secure-dna-query diffie-hellman
+  (defrole synth-client-exempt
+    (vars (keyserver-ch database-ch chan)
+      (r-s r-s2 r-k r-d t t2 authcode random256)
+      (c-id k-id d-id m-root i-root b-id name) (seq exempt blind k rndx)
+      (b-s b-k b-d b-bio bundle-data) (resp query-response))
+    (trace
+      (send keyserver-ch
+        (cat r-s &quot;keyserver&quot; k-id
+          (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s)
+          (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+            (privk m-root))))
+      (recv keyserver-ch
+        (cat t r-k
+          (cat (cat &quot;Token&quot; k-id (pubk k-id) i-root (pubk i-root) b-k)
+            (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k)
+              (privk i-root)))
+          (enc
+            (hash &quot;server-mutauth&quot; r-k r-s
+              (cat &quot;Token&quot; k-id (pubk k-id) i-root (pubk i-root) b-k)
+              (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k)
+                (privk i-root))) (privk k-id))))
+      (send keyserver-ch
+        (cat t &quot;nSeq&quot;
+          (enc
+            (hash &quot;client-mutauth&quot; r-k r-s
+              (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s)
+              (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+                (privk m-root))) (privk c-id))))
+      (send keyserver-ch (cat t (exp (gen) (mul seq blind))))
+      (send keyserver-ch (cat t (exp (gen) (mul exempt blind))))
+      (recv keyserver-ch (exp (gen) (mul seq blind k)))
+      (recv keyserver-ch (exp (gen) (mul exempt blind k)))
+      (send database-ch
+        (cat r-s2 &quot;screen&quot;
+          (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s)
+          (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+            (privk m-root))))
+      (recv database-ch
+        (cat t2 r-d
+          (cat (cat &quot;Token&quot; d-id (pubk d-id) i-root (pubk i-root) b-d)
+            (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d)
+              (privk i-root)))
+          (enc
+            (hash &quot;server-mutauth&quot; r-d r-s2
+              (cat &quot;Token&quot; d-id (pubk d-id) i-root (pubk i-root) b-d)
+              (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d)
+                (privk i-root))) (privk d-id))))
+      (send database-ch
+        (cat t2 &quot;nSeq&quot;
+          (enc
+            (hash &quot;client-mutauth&quot; r-d r-s2
+              (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s)
+              (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+                (privk m-root))) (privk c-id))))
+      (send database-ch (cat t2 (exp (gen) (mul seq k))))
+      (send database-ch
+        (cat
+          (cat (cat &quot;Token&quot; c-id (pubk c-id) b-id (pubk b-id) b-bio)
+            (enc (hash c-id (pubk c-id) b-id (pubk b-id) b-bio)
+              (privk b-id))) authcode (exp (gen) (mul exempt k))))
+      (recv database-ch resp))
+    (pen-non-orig authcode)
+    (uniq-orig r-s r-s2)
+    (uniq-gen seq exempt blind)
+    (absent (exempt (mul seq blind))))
+  (defrole key-server-exempt
+    (vars (keyserver-ch chan) (r-s r-k t random256)
+      (c-id k-id m-root i-root name) (seq exempt blind k rndx)
+      (b-s b-k bundle-data))
+    (trace
+      (recv keyserver-ch
+        (cat r-s &quot;keyserver&quot; k-id
+          (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s)
+          (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+            (privk m-root))))
+      (send keyserver-ch
+        (cat t r-k
+          (cat (cat &quot;Token&quot; k-id (pubk k-id) i-root (pubk i-root) b-k)
+            (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k)
+              (privk i-root)))
+          (enc
+            (hash &quot;server-mutauth&quot; r-k r-s
+              (cat &quot;Token&quot; k-id (pubk k-id) i-root (pubk i-root) b-k)
+              (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k)
+                (privk i-root))) (privk k-id))))
+      (recv keyserver-ch
+        (cat t &quot;nSeq&quot;
+          (enc
+            (hash &quot;client-mutauth&quot; r-k r-s
+              (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s)
+              (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+                (privk m-root))) (privk c-id))))
+      (recv keyserver-ch (cat t (exp (gen) (mul seq blind))))
+      (recv keyserver-ch (cat t (exp (gen) (mul exempt blind))))
+      (send keyserver-ch (exp (gen) (mul seq blind k)))
+      (send keyserver-ch (exp (gen) (mul exempt blind k))))
+    (uniq-orig t)
+    (uniq-gen k)
+    (absent (k (mul seq blind)) (k (mul exempt blind))))
+  (defrole database-exempt
+    (vars (database-ch chan) (r-s r-d t authcode random256)
+      (c-id d-id m-root i-root b-id name) (resp query-response)
+      (signed exemptSigned expt) (b-s b-d b-bio bundle-data))
+    (trace
+      (recv database-ch
+        (cat r-s &quot;screen&quot;
+          (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s)
+          (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+            (privk m-root))))
+      (send database-ch
+        (cat t r-d
+          (cat (cat &quot;Token&quot; d-id (pubk d-id) i-root (pubk i-root) b-d)
+            (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d)
+              (privk i-root)))
+          (enc
+            (hash &quot;server-mutauth&quot; r-d r-s
+              (cat &quot;Token&quot; d-id (pubk d-id) i-root (pubk i-root) b-d)
+              (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d)
+                (privk i-root))) (privk d-id))))
+      (recv database-ch
+        (cat t &quot;nSeq&quot;
+          (enc
+            (hash &quot;client-mutauth&quot; r-d r-s
+              (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s)
+              (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+                (privk m-root))) (privk c-id))))
+      (recv database-ch (cat t (exp (gen) signed)))
+      (recv database-ch
+        (cat
+          (cat (cat &quot;Token&quot; c-id (pubk c-id) b-id (pubk b-id) b-bio)
+            (enc (hash c-id (pubk c-id) b-id (pubk b-id) b-bio)
+              (privk b-id))) authcode (exp (gen) exemptSigned)))
+      (send database-ch resp))
+    (pen-non-orig authcode)
+    (uniq-orig t))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random256 atom) (query-response atom) (bundle-data atom)))</pre>
+
+<p id="k0">Item <a href="#t0">0</a>, Child: <a href="#k1">1</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='179.880pt' height='1054.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 179.880 1054.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='139.920' y1='114.960' x2='139.920' y2='189.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='1014.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g><title>seq</title><circle cx='139.920' cy='189.960' r='6.000'/></g>
+  <g><title>seq</title>
+   <circle style='fill: red;' cx='139.920' cy='114.960' r='6.000'/></g>
+  <g><title>(ch-msg database-ch resp)</title>
+   <circle style='fill: red;' cx='39.960' cy='1014.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg database-ch (cat (cat (cat &quot;Token&quot; c-id (pubk c-id) b-id (pubk b-id) b-bio) (enc (hash c-id (pubk c-id) b-id (pubk b-id) b-bio) (privk b-id))) authcode (exp (gen) (mul exempt k))))</title>
+   <circle cx='39.960' cy='939.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg database-ch (cat t2 (exp (gen) (mul seq k))))</title>
+   <circle cx='39.960' cy='864.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg database-ch (cat t2 &quot;nSeq&quot; (enc (hash &quot;client-mutauth&quot; r-d r-s2 (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s) (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s) (privk m-root))) (privk c-id))))</title>
+   <circle cx='39.960' cy='789.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg database-ch (cat t2 r-d (cat (cat &quot;Token&quot; d-id (pubk d-id) i-root (pubk i-root) b-d) (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d) (privk i-root))) (enc (hash &quot;server-mutauth&quot; r-d r-s2 (cat &quot;Token&quot; d-id (pubk d-id) i-root (pubk i-root) b-d) (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d) (privk i-root))) (privk d-id))))</title>
+   <circle style='fill: red;' cx='39.960' cy='714.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg database-ch (cat r-s2 &quot;screen&quot; (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s) (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s) (privk m-root))))</title>
+   <circle cx='39.960' cy='639.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg keyserver-ch (exp (gen) (mul blind exempt k)))</title>
+   <circle style='fill: red;' cx='39.960' cy='564.960' r='6.000'/></g>
+  <g><title>(ch-msg keyserver-ch (exp (gen) (mul seq blind k)))</title>
+   <circle style='fill: red;' cx='39.960' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg keyserver-ch (cat t (exp (gen) (mul blind exempt))))</title>
+   <circle cx='39.960' cy='414.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg keyserver-ch (cat t (exp (gen) (mul seq blind))))</title>
+   <circle cx='39.960' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg keyserver-ch (cat t &quot;nSeq&quot; (enc (hash &quot;client-mutauth&quot; r-k r-s (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s) (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s) (privk m-root))) (privk c-id))))</title>
+   <circle cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg keyserver-ch (cat t r-k (cat (cat &quot;Token&quot; k-id (pubk k-id) i-root (pubk i-root) b-k) (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k) (privk i-root))) (enc (hash &quot;server-mutauth&quot; r-k r-s (cat &quot;Token&quot; k-id (pubk k-id) i-root (pubk i-root) b-k) (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k) (privk i-root))) (privk k-id))))</title>
+   <circle style='fill: red;' cx='39.960' cy='189.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg keyserver-ch (cat r-s &quot;keyserver&quot; k-id (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s) (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s) (privk m-root))))</title>
+   <circle cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((b-s b-s) (b-k b-k) (b-d b-d) (b-bio b-bio) (resp resp) (r-s r-s) (r-s2 r-s2) (r-k r-k) (r-d r-d) (t t) (t2 t2) (authcode authcode) (c-id c-id) (k-id k-id) (d-id d-id) (m-root m-root) (i-root i-root) (b-id b-id) (keyserver-ch keyserver-ch) (database-ch database-ch) (seq seq) (exempt exempt) (blind blind) (k k))</title>
+   <text
+    x='39.960' y='77.460'
+    style='text-anchor: middle;'>synth-client-exempt</text></g>
+  <text
+   x='89.940' y='39.960'
+   style='text-anchor: middle;'>secure-dna-query 0</text></svg></div>
+
+<pre>(defskeleton secure-dna-query
+  (vars (b-s b-k b-d b-bio bundle-data) (resp query-response)
+    (r-s r-s2 r-k r-d t t2 authcode random256)
+    (c-id k-id d-id m-root i-root b-id name)
+    (keyserver-ch database-ch chan) (seq blind exempt k rndx))
+  (defstrand synth-client-exempt 13 (b-s b-s) (b-k b-k) (b-d b-d)
+    (b-bio b-bio) (resp resp) (r-s r-s) (r-s2 r-s2) (r-k r-k) (r-d r-d)
+    (t t) (t2 t2) (authcode authcode) (c-id c-id) (k-id k-id)
+    (d-id d-id) (m-root m-root) (i-root i-root) (b-id b-id)
+    (keyserver-ch keyserver-ch) (database-ch database-ch) (seq seq)
+    (exempt exempt) (blind blind) (k k))
+  (deflistener seq)
+  (non-orig (privk c-id) (privk k-id) (privk d-id) (privk m-root)
+    (privk i-root) (privk b-id))
+  (pen-non-orig authcode)
+  (uniq-orig r-s r-s2)
+  (uniq-gen seq blind exempt)
+  (absent (exempt (mul seq blind)))
+  (conf keyserver-ch database-ch)
+  (auth keyserver-ch database-ch)
+  (facts (neq seq blind exempt))
+  (traces
+    ((send keyserver-ch
+       (cat r-s &quot;keyserver&quot; k-id
+         (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s)
+         (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+           (privk m-root))))
+      (recv keyserver-ch
+        (cat t r-k
+          (cat (cat &quot;Token&quot; k-id (pubk k-id) i-root (pubk i-root) b-k)
+            (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k)
+              (privk i-root)))
+          (enc
+            (hash &quot;server-mutauth&quot; r-k r-s
+              (cat &quot;Token&quot; k-id (pubk k-id) i-root (pubk i-root) b-k)
+              (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k)
+                (privk i-root))) (privk k-id))))
+      (send keyserver-ch
+        (cat t &quot;nSeq&quot;
+          (enc
+            (hash &quot;client-mutauth&quot; r-k r-s
+              (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s)
+              (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+                (privk m-root))) (privk c-id))))
+      (send keyserver-ch (cat t (exp (gen) (mul seq blind))))
+      (send keyserver-ch (cat t (exp (gen) (mul blind exempt))))
+      (recv keyserver-ch (exp (gen) (mul seq blind k)))
+      (recv keyserver-ch (exp (gen) (mul blind exempt k)))
+      (send database-ch
+        (cat r-s2 &quot;screen&quot;
+          (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s)
+          (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+            (privk m-root))))
+      (recv database-ch
+        (cat t2 r-d
+          (cat (cat &quot;Token&quot; d-id (pubk d-id) i-root (pubk i-root) b-d)
+            (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d)
+              (privk i-root)))
+          (enc
+            (hash &quot;server-mutauth&quot; r-d r-s2
+              (cat &quot;Token&quot; d-id (pubk d-id) i-root (pubk i-root) b-d)
+              (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d)
+                (privk i-root))) (privk d-id))))
+      (send database-ch
+        (cat t2 &quot;nSeq&quot;
+          (enc
+            (hash &quot;client-mutauth&quot; r-d r-s2
+              (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s)
+              (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+                (privk m-root))) (privk c-id))))
+      (send database-ch (cat t2 (exp (gen) (mul seq k))))
+      (send database-ch
+        (cat
+          (cat (cat &quot;Token&quot; c-id (pubk c-id) b-id (pubk b-id) b-bio)
+            (enc (hash c-id (pubk c-id) b-id (pubk b-id) b-bio)
+              (privk b-id))) authcode (exp (gen) (mul exempt k))))
+      (recv database-ch resp)) ((recv seq) (send seq)))
+  (label 0)
+  (unrealized (0 1) (0 5) (0 6) (0 8) (0 12) (1 0))
+  (preskeleton)
+  (origs (r-s (0 0)) (r-s2 (0 7)))
+  (ugens (seq (0 3)) (exempt (0 4)) (blind (0 3)))
+  (comment &quot;Not a skeleton&quot;))</pre>
+
+<p id="k1">Item <a href="#t0">1</a>, Parent: <a href="#k0">0</a>.</p>
+
+<div>
+ <svg
+  class='diagram' width='179.880pt' height='1054.920pt'
+  xmlns='http://www.w3.org/2000/svg' version='1.1'
+  viewBox='0 0 179.880 1054.920' font-size='12.000'>
+  <defs>
+   <marker
+    id='arrow' orient='auto' markerWidth='5' markerHeight='10' refX='5'
+    refY='5'>
+    <path
+     d='M 0 0 5 5 0 10'
+     style='stroke-width: 2; fill: none; stroke: black;'/></marker>
+   </defs>
+  <line
+   x1='139.920' y1='339.960' x2='139.920' y2='414.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <line
+   x1='39.960' y1='114.960' x2='39.960' y2='1014.960'
+   style='stroke-width: 0.960; stroke: gray;'/>
+  <g><title>seq</title><circle cx='139.920' cy='414.960' r='6.000'/></g>
+  <g><title>seq</title>
+   <circle style='fill: red;' cx='139.920' cy='339.960' r='6.000'/></g>
+  <g><title>(ch-msg database-ch resp)</title>
+   <circle style='fill: red;' cx='39.960' cy='1014.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg database-ch (cat (cat (cat &quot;Token&quot; c-id (pubk c-id) b-id (pubk b-id) b-bio) (enc (hash c-id (pubk c-id) b-id (pubk b-id) b-bio) (privk b-id))) authcode (exp (gen) (mul exempt k))))</title>
+   <circle cx='39.960' cy='939.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg database-ch (cat t2 (exp (gen) (mul seq k))))</title>
+   <circle cx='39.960' cy='864.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg database-ch (cat t2 &quot;nSeq&quot; (enc (hash &quot;client-mutauth&quot; r-d r-s2 (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s) (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s) (privk m-root))) (privk c-id))))</title>
+   <circle cx='39.960' cy='789.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg database-ch (cat t2 r-d (cat (cat &quot;Token&quot; d-id (pubk d-id) i-root (pubk i-root) b-d) (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d) (privk i-root))) (enc (hash &quot;server-mutauth&quot; r-d r-s2 (cat &quot;Token&quot; d-id (pubk d-id) i-root (pubk i-root) b-d) (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d) (privk i-root))) (privk d-id))))</title>
+   <circle style='fill: red;' cx='39.960' cy='714.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg database-ch (cat r-s2 &quot;screen&quot; (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s) (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s) (privk m-root))))</title>
+   <circle cx='39.960' cy='639.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg keyserver-ch (exp (gen) (mul blind exempt k)))</title>
+   <circle style='fill: red;' cx='39.960' cy='564.960' r='6.000'/></g>
+  <g><title>(ch-msg keyserver-ch (exp (gen) (mul seq blind k)))</title>
+   <circle style='fill: red;' cx='39.960' cy='489.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg keyserver-ch (cat t (exp (gen) (mul blind exempt))))</title>
+   <circle cx='39.960' cy='414.960' r='6.000'/></g>
+  <path
+   d='M 39.960 339.960 Q 86.940 339.960 133.920 339.960'
+   style='stroke-dasharray: 6.000,2.400; stroke-width: 0.960; stroke: black; marker-end: url(#arrow); fill: none;'/>
+  <g>
+   <title>(ch-msg keyserver-ch (cat t (exp (gen) (mul seq blind))))</title>
+   <circle cx='39.960' cy='339.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg keyserver-ch (cat t &quot;nSeq&quot; (enc (hash &quot;client-mutauth&quot; r-k r-s (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s) (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s) (privk m-root))) (privk c-id))))</title>
+   <circle cx='39.960' cy='264.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg keyserver-ch (cat t r-k (cat (cat &quot;Token&quot; k-id (pubk k-id) i-root (pubk i-root) b-k) (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k) (privk i-root))) (enc (hash &quot;server-mutauth&quot; r-k r-s (cat &quot;Token&quot; k-id (pubk k-id) i-root (pubk i-root) b-k) (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k) (privk i-root))) (privk k-id))))</title>
+   <circle style='fill: red;' cx='39.960' cy='189.960' r='6.000'/></g>
+  <g>
+   <title>(ch-msg keyserver-ch (cat r-s &quot;keyserver&quot; k-id (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s) (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s) (privk m-root))))</title>
+   <circle cx='39.960' cy='114.960' r='6.000'/></g>
+  <g>
+   <title>((b-s b-s) (b-k b-k) (b-d b-d) (b-bio b-bio) (resp resp) (r-s r-s) (r-s2 r-s2) (r-k r-k) (r-d r-d) (t t) (t2 t2) (authcode authcode) (c-id c-id) (k-id k-id) (d-id d-id) (m-root m-root) (i-root i-root) (b-id b-id) (keyserver-ch keyserver-ch) (database-ch database-ch) (seq seq) (exempt exempt) (blind blind) (k k))</title>
+   <text
+    x='39.960' y='77.460'
+    style='text-anchor: middle;'>synth-client-exempt</text></g>
+  <text
+   x='89.940' y='39.960'
+   style='text-anchor: middle;'>secure-dna-query 1</text></svg></div>
+
+<pre>(defskeleton secure-dna-query
+  (vars (b-s b-k b-d b-bio bundle-data) (resp query-response)
+    (r-s r-s2 r-k r-d t t2 authcode random256)
+    (c-id k-id d-id m-root i-root b-id name)
+    (keyserver-ch database-ch chan) (seq blind exempt k rndx))
+  (defstrand synth-client-exempt 13 (b-s b-s) (b-k b-k) (b-d b-d)
+    (b-bio b-bio) (resp resp) (r-s r-s) (r-s2 r-s2) (r-k r-k) (r-d r-d)
+    (t t) (t2 t2) (authcode authcode) (c-id c-id) (k-id k-id)
+    (d-id d-id) (m-root m-root) (i-root i-root) (b-id b-id)
+    (keyserver-ch keyserver-ch) (database-ch database-ch) (seq seq)
+    (exempt exempt) (blind blind) (k k))
+  (deflistener seq)
+  (precedes ((0 3) (1 0)))
+  (non-orig (privk c-id) (privk k-id) (privk d-id) (privk m-root)
+    (privk i-root) (privk b-id))
+  (pen-non-orig authcode)
+  (uniq-orig r-s r-s2)
+  (uniq-gen seq blind exempt)
+  (absent (exempt (mul seq blind)))
+  (conf keyserver-ch database-ch)
+  (auth keyserver-ch database-ch)
+  (facts (neq seq blind exempt))
+  (traces
+    ((send keyserver-ch
+       (cat r-s &quot;keyserver&quot; k-id
+         (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s)
+         (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+           (privk m-root))))
+      (recv keyserver-ch
+        (cat t r-k
+          (cat (cat &quot;Token&quot; k-id (pubk k-id) i-root (pubk i-root) b-k)
+            (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k)
+              (privk i-root)))
+          (enc
+            (hash &quot;server-mutauth&quot; r-k r-s
+              (cat &quot;Token&quot; k-id (pubk k-id) i-root (pubk i-root) b-k)
+              (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k)
+                (privk i-root))) (privk k-id))))
+      (send keyserver-ch
+        (cat t &quot;nSeq&quot;
+          (enc
+            (hash &quot;client-mutauth&quot; r-k r-s
+              (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s)
+              (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+                (privk m-root))) (privk c-id))))
+      (send keyserver-ch (cat t (exp (gen) (mul seq blind))))
+      (send keyserver-ch (cat t (exp (gen) (mul blind exempt))))
+      (recv keyserver-ch (exp (gen) (mul seq blind k)))
+      (recv keyserver-ch (exp (gen) (mul blind exempt k)))
+      (send database-ch
+        (cat r-s2 &quot;screen&quot;
+          (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s)
+          (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+            (privk m-root))))
+      (recv database-ch
+        (cat t2 r-d
+          (cat (cat &quot;Token&quot; d-id (pubk d-id) i-root (pubk i-root) b-d)
+            (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d)
+              (privk i-root)))
+          (enc
+            (hash &quot;server-mutauth&quot; r-d r-s2
+              (cat &quot;Token&quot; d-id (pubk d-id) i-root (pubk i-root) b-d)
+              (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d)
+                (privk i-root))) (privk d-id))))
+      (send database-ch
+        (cat t2 &quot;nSeq&quot;
+          (enc
+            (hash &quot;client-mutauth&quot; r-d r-s2
+              (cat &quot;Token&quot; c-id (pubk c-id) m-root (pubk m-root) b-s)
+              (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+                (privk m-root))) (privk c-id))))
+      (send database-ch (cat t2 (exp (gen) (mul seq k))))
+      (send database-ch
+        (cat
+          (cat (cat &quot;Token&quot; c-id (pubk c-id) b-id (pubk b-id) b-bio)
+            (enc (hash c-id (pubk c-id) b-id (pubk b-id) b-bio)
+              (privk b-id))) authcode (exp (gen) (mul exempt k))))
+      (recv database-ch resp)) ((recv seq) (send seq)))
+  (label 1)
+  (parent 0)
+  (unrealized (0 1) (0 5) (0 6) (0 8) (0 12) (1 0))
+  (dead)
+  (origs (r-s (0 0)) (r-s2 (0 7)))
+  (ugens (seq (0 3)) (exempt (0 4)) (blind (0 3)))
+  (comment &quot;empty cohort&quot;))</pre>
+
+</body>
+</html>

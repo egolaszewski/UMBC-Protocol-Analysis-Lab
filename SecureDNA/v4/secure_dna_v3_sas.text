@@ -1,0 +1,672 @@
+(herald "Secure DNA Query Protocol without Cert. Chaining"
+  (comment "This model does not feature any certificate chaining.")
+  (algebra diffie-hellman))
+
+(comment "CPSA 4.4.5")
+(comment "Coherent logic")
+
+(comment "CPSA 4.4.5")
+
+(comment "All input read from secure_dna_v3.scm")
+
+(defprotocol secure-dna-query diffie-hellman
+  (defrole synth-client
+    (vars (keyserver-ch database-ch chan)
+      (r-s r-s2 r-k r-d t t2 random256)
+      (c-id k-id d-id m-root i-root name) (seq blind k rndx)
+      (b-s b-k b-d bundle-data) (resp query-response))
+    (trace
+      (send keyserver-ch
+        (cat r-s "keyserver" k-id
+          (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+          (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+            (privk m-root))))
+      (recv keyserver-ch
+        (cat t r-k
+          (cat (cat "Token" k-id (pubk k-id) i-root (pubk i-root) b-k)
+            (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k)
+              (privk i-root)))
+          (enc
+            (hash "server-mutauth" r-k r-s
+              (cat "Token" k-id (pubk k-id) i-root (pubk i-root) b-k)
+              (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k)
+                (privk i-root))) (privk k-id))))
+      (send keyserver-ch
+        (cat t "nSeq"
+          (enc
+            (hash "client-mutauth" r-k r-s
+              (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+              (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+                (privk m-root))) (privk c-id))))
+      (send keyserver-ch (cat t (exp (gen) (mul seq blind))))
+      (recv keyserver-ch (exp (gen) (mul seq blind k)))
+      (send database-ch
+        (cat r-s2 "screen"
+          (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+          (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+            (privk m-root))))
+      (recv database-ch
+        (cat t2 r-d
+          (cat (cat "Token" d-id (pubk d-id) i-root (pubk i-root) b-d)
+            (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d)
+              (privk i-root)))
+          (enc
+            (hash "server-mutauth" r-d r-s2
+              (cat "Token" d-id (pubk d-id) i-root (pubk i-root) b-d)
+              (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d)
+                (privk i-root))) (privk d-id))))
+      (send database-ch
+        (cat t2 "nSeq"
+          (enc
+            (hash "client-mutauth" r-d r-s2
+              (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+              (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+                (privk m-root))) (privk c-id))))
+      (send database-ch (cat t2 (exp (gen) (mul seq k))))
+      (recv database-ch resp))
+    (uniq-orig r-s r-s2)
+    (uniq-gen seq blind))
+  (defrole key-server
+    (vars (keyserver-ch chan) (r-s r-k t random256)
+      (c-id k-id m-root i-root name) (seq blind k rndx)
+      (b-s b-k bundle-data))
+    (trace
+      (recv keyserver-ch
+        (cat r-s "keyserver" k-id
+          (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+          (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+            (privk m-root))))
+      (send keyserver-ch
+        (cat t r-k
+          (cat (cat "Token" k-id (pubk k-id) i-root (pubk i-root) b-k)
+            (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k)
+              (privk i-root)))
+          (enc
+            (hash "server-mutauth" r-k r-s
+              (cat "Token" k-id (pubk k-id) i-root (pubk i-root) b-k)
+              (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k)
+                (privk i-root))) (privk k-id))))
+      (recv keyserver-ch
+        (cat t "nSeq"
+          (enc
+            (hash "client-mutauth" r-k r-s
+              (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+              (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+                (privk m-root))) (privk c-id))))
+      (recv keyserver-ch (cat t (exp (gen) (mul seq blind))))
+      (send keyserver-ch (exp (gen) (mul seq blind k))))
+    (uniq-orig t)
+    (uniq-gen k)
+    (absent (k (mul seq blind))))
+  (defrole database
+    (vars (database-ch chan) (r-s r-d t random256)
+      (c-id d-id m-root i-root name) (resp query-response) (signed expt)
+      (b-s b-d bundle-data))
+    (trace
+      (recv database-ch
+        (cat r-s "screen"
+          (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+          (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+            (privk m-root))))
+      (send database-ch
+        (cat t r-d
+          (cat (cat "Token" d-id (pubk d-id) i-root (pubk i-root) b-d)
+            (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d)
+              (privk i-root)))
+          (enc
+            (hash "server-mutauth" r-d r-s
+              (cat "Token" d-id (pubk d-id) i-root (pubk i-root) b-d)
+              (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d)
+                (privk i-root))) (privk d-id))))
+      (recv database-ch
+        (cat t "nSeq"
+          (enc
+            (hash "client-mutauth" r-d r-s
+              (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+              (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+                (privk m-root))) (privk c-id))))
+      (recv database-ch (cat t (exp (gen) signed)))
+      (send database-ch resp))
+    (uniq-orig t))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random256 atom) (query-response atom) (bundle-data atom)))
+
+(defgoal secure-dna-query
+  (forall
+    ((b-s b-k b-d bundle-data) (resp query-response)
+      (r-s r-s2 r-k r-d t t2 random256)
+      (c-id k-id d-id m-root i-root name)
+      (keyserver-ch database-ch chan) (seq blind k rndx) (z strd))
+    (implies
+      (and (p "synth-client" z 10) (p "synth-client" "b-s" z b-s)
+        (p "synth-client" "b-k" z b-k) (p "synth-client" "b-d" z b-d)
+        (p "synth-client" "resp" z resp) (p "synth-client" "r-s" z r-s)
+        (p "synth-client" "r-s2" z r-s2) (p "synth-client" "r-k" z r-k)
+        (p "synth-client" "r-d" z r-d) (p "synth-client" "t" z t)
+        (p "synth-client" "t2" z t2) (p "synth-client" "c-id" z c-id)
+        (p "synth-client" "k-id" z k-id)
+        (p "synth-client" "d-id" z d-id)
+        (p "synth-client" "m-root" z m-root)
+        (p "synth-client" "i-root" z i-root)
+        (p "synth-client" "keyserver-ch" z keyserver-ch)
+        (p "synth-client" "database-ch" z database-ch)
+        (p "synth-client" "seq" z seq)
+        (p "synth-client" "blind" z blind) (p "synth-client" "k" z k)
+        (non (privk c-id)) (non (privk k-id)) (non (privk d-id))
+        (non (privk m-root)) (non (privk i-root)) (ugen seq)
+        (ugen blind) (uniq-at r-s z 0) (uniq-at r-s2 z 5)
+        (auth keyserver-ch) (auth database-ch) (conf keyserver-ch)
+        (conf database-ch) (fact neq seq blind))
+      (or
+        (exists ((z-0 z-1 strd))
+          (and (p "key-server" z-0 5) (p "database" z-1 5)
+            (p "key-server" "b-s" z-0 b-s)
+            (p "key-server" "b-k" z-0 b-k)
+            (p "key-server" "r-s" z-0 r-s)
+            (p "key-server" "r-k" z-0 r-k) (p "key-server" "t" z-0 t)
+            (p "key-server" "c-id" z-0 c-id)
+            (p "key-server" "k-id" z-0 k-id)
+            (p "key-server" "m-root" z-0 m-root)
+            (p "key-server" "i-root" z-0 i-root)
+            (p "key-server" "keyserver-ch" z-0 keyserver-ch)
+            (p "key-server" "seq" z-0 blind)
+            (p "key-server" "blind" z-0 seq) (p "key-server" "k" z-0 k)
+            (p "database" "b-s" z-1 b-s) (p "database" "b-d" z-1 b-d)
+            (p "database" "resp" z-1 resp) (p "database" "r-s" z-1 r-s2)
+            (p "database" "r-d" z-1 r-d) (p "database" "t" z-1 t2)
+            (p "database" "c-id" z-1 c-id)
+            (p "database" "d-id" z-1 d-id)
+            (p "database" "m-root" z-1 m-root)
+            (p "database" "i-root" z-1 i-root)
+            (p "database" "database-ch" z-1 database-ch)
+            (p "database" "signed" z-1 (mul seq k)) (prec z 0 z-0 0)
+            (prec z 2 z-0 2) (prec z 3 z-0 3) (prec z 5 z-1 0)
+            (prec z 7 z-1 2) (prec z 8 z-1 3) (prec z-0 1 z 1)
+            (prec z-0 4 z 4) (prec z-1 1 z 6) (prec z-1 4 z 9) (ugen k)
+            (uniq-at t2 z-1 1) (uniq-at t z-0 1)))
+        (exists
+          ((b-s-0 b-k-0 b-d-0 bundle-data)
+            (t-0 r-s-0 r-s2-0 r-k-0 r-d-0 t-1 random256)
+            (c-id-0 k-id-0 d-id-0 m-root-0 i-root-0 name)
+            (keyserver-ch-0 chan) (blind-0 seq-0 k-0 rndx)
+            (z-0 z-1 z-2 z-3 strd))
+          (and (p "key-server" z-0 5) (p "database" z-1 2)
+            (p "database" z-2 5) (p "synth-client" z-3 9)
+            (p "key-server" "b-s" z-0 b-s)
+            (p "key-server" "b-k" z-0 b-k)
+            (p "key-server" "r-s" z-0 r-s)
+            (p "key-server" "r-k" z-0 r-k) (p "key-server" "t" z-0 t)
+            (p "key-server" "c-id" z-0 c-id)
+            (p "key-server" "k-id" z-0 k-id)
+            (p "key-server" "m-root" z-0 m-root)
+            (p "key-server" "i-root" z-0 i-root)
+            (p "key-server" "keyserver-ch" z-0 keyserver-ch)
+            (p "key-server" "seq" z-0 blind)
+            (p "key-server" "blind" z-0 seq) (p "key-server" "k" z-0 k)
+            (p "database" "b-s" z-1 b-s) (p "database" "b-d" z-1 b-d)
+            (p "database" "r-s" z-1 r-s2) (p "database" "r-d" z-1 r-d)
+            (p "database" "t" z-1 t2) (p "database" "c-id" z-1 c-id)
+            (p "database" "d-id" z-1 d-id)
+            (p "database" "m-root" z-1 m-root)
+            (p "database" "i-root" z-1 i-root)
+            (p "database" "database-ch" z-1 database-ch)
+            (p "database" "b-s" z-2 b-s-0)
+            (p "database" "b-d" z-2 b-d-0)
+            (p "database" "resp" z-2 resp)
+            (p "database" "r-s" z-2 r-s2-0)
+            (p "database" "r-d" z-2 r-d-0) (p "database" "t" z-2 t-0)
+            (p "database" "c-id" z-2 c-id-0)
+            (p "database" "d-id" z-2 d-id-0)
+            (p "database" "m-root" z-2 m-root-0)
+            (p "database" "i-root" z-2 i-root-0)
+            (p "database" "database-ch" z-2 database-ch)
+            (p "database" "signed" z-2 (mul seq-0 k-0))
+            (p "synth-client" "b-s" z-3 b-s-0)
+            (p "synth-client" "b-k" z-3 b-k-0)
+            (p "synth-client" "b-d" z-3 b-d-0)
+            (p "synth-client" "r-s" z-3 r-s-0)
+            (p "synth-client" "r-s2" z-3 r-s2-0)
+            (p "synth-client" "r-k" z-3 r-k-0)
+            (p "synth-client" "r-d" z-3 r-d-0)
+            (p "synth-client" "t" z-3 t-1)
+            (p "synth-client" "t2" z-3 t-0)
+            (p "synth-client" "c-id" z-3 c-id-0)
+            (p "synth-client" "k-id" z-3 k-id-0)
+            (p "synth-client" "d-id" z-3 d-id-0)
+            (p "synth-client" "m-root" z-3 m-root-0)
+            (p "synth-client" "i-root" z-3 i-root-0)
+            (p "synth-client" "keyserver-ch" z-3 keyserver-ch-0)
+            (p "synth-client" "database-ch" z-3 database-ch)
+            (p "synth-client" "seq" z-3 seq-0)
+            (p "synth-client" "blind" z-3 blind-0)
+            (p "synth-client" "k" z-3 k-0) (prec z 0 z-0 0)
+            (prec z 2 z-0 2) (prec z 3 z-0 3) (prec z 5 z-1 0)
+            (prec z-0 1 z 1) (prec z-0 4 z 4) (prec z-1 1 z 6)
+            (prec z-2 1 z-3 6) (prec z-2 4 z 9) (prec z-3 5 z-2 0)
+            (prec z-3 7 z-2 2) (prec z-3 8 z-2 3) (ugen k)
+            (ugen blind-0) (ugen seq-0) (uniq-at r-s-0 z-3 0)
+            (uniq-at r-s2-0 z-3 5) (uniq-at t-0 z-2 1)
+            (uniq-at t2 z-1 1) (uniq-at t z-0 1)))))))
+
+(defprotocol secure-dna-query diffie-hellman
+  (defrole synth-client
+    (vars (keyserver-ch database-ch chan)
+      (r-s r-s2 r-k r-d t t2 random256)
+      (c-id k-id d-id m-root i-root name) (seq blind k rndx)
+      (b-s b-k b-d bundle-data) (resp query-response))
+    (trace
+      (send keyserver-ch
+        (cat r-s "keyserver" k-id
+          (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+          (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+            (privk m-root))))
+      (recv keyserver-ch
+        (cat t r-k
+          (cat (cat "Token" k-id (pubk k-id) i-root (pubk i-root) b-k)
+            (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k)
+              (privk i-root)))
+          (enc
+            (hash "server-mutauth" r-k r-s
+              (cat "Token" k-id (pubk k-id) i-root (pubk i-root) b-k)
+              (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k)
+                (privk i-root))) (privk k-id))))
+      (send keyserver-ch
+        (cat t "nSeq"
+          (enc
+            (hash "client-mutauth" r-k r-s
+              (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+              (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+                (privk m-root))) (privk c-id))))
+      (send keyserver-ch (cat t (exp (gen) (mul seq blind))))
+      (recv keyserver-ch (exp (gen) (mul seq blind k)))
+      (send database-ch
+        (cat r-s2 "screen"
+          (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+          (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+            (privk m-root))))
+      (recv database-ch
+        (cat t2 r-d
+          (cat (cat "Token" d-id (pubk d-id) i-root (pubk i-root) b-d)
+            (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d)
+              (privk i-root)))
+          (enc
+            (hash "server-mutauth" r-d r-s2
+              (cat "Token" d-id (pubk d-id) i-root (pubk i-root) b-d)
+              (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d)
+                (privk i-root))) (privk d-id))))
+      (send database-ch
+        (cat t2 "nSeq"
+          (enc
+            (hash "client-mutauth" r-d r-s2
+              (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+              (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+                (privk m-root))) (privk c-id))))
+      (send database-ch (cat t2 (exp (gen) (mul seq k))))
+      (recv database-ch resp))
+    (uniq-orig r-s r-s2)
+    (uniq-gen seq blind))
+  (defrole key-server
+    (vars (keyserver-ch chan) (r-s r-k t random256)
+      (c-id k-id m-root i-root name) (seq blind k rndx)
+      (b-s b-k bundle-data))
+    (trace
+      (recv keyserver-ch
+        (cat r-s "keyserver" k-id
+          (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+          (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+            (privk m-root))))
+      (send keyserver-ch
+        (cat t r-k
+          (cat (cat "Token" k-id (pubk k-id) i-root (pubk i-root) b-k)
+            (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k)
+              (privk i-root)))
+          (enc
+            (hash "server-mutauth" r-k r-s
+              (cat "Token" k-id (pubk k-id) i-root (pubk i-root) b-k)
+              (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k)
+                (privk i-root))) (privk k-id))))
+      (recv keyserver-ch
+        (cat t "nSeq"
+          (enc
+            (hash "client-mutauth" r-k r-s
+              (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+              (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+                (privk m-root))) (privk c-id))))
+      (recv keyserver-ch (cat t (exp (gen) (mul seq blind))))
+      (send keyserver-ch (exp (gen) (mul seq blind k))))
+    (uniq-orig t)
+    (uniq-gen k)
+    (absent (k (mul seq blind))))
+  (defrole database
+    (vars (database-ch chan) (r-s r-d t random256)
+      (c-id d-id m-root i-root name) (resp query-response) (signed expt)
+      (b-s b-d bundle-data))
+    (trace
+      (recv database-ch
+        (cat r-s "screen"
+          (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+          (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+            (privk m-root))))
+      (send database-ch
+        (cat t r-d
+          (cat (cat "Token" d-id (pubk d-id) i-root (pubk i-root) b-d)
+            (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d)
+              (privk i-root)))
+          (enc
+            (hash "server-mutauth" r-d r-s
+              (cat "Token" d-id (pubk d-id) i-root (pubk i-root) b-d)
+              (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d)
+                (privk i-root))) (privk d-id))))
+      (recv database-ch
+        (cat t "nSeq"
+          (enc
+            (hash "client-mutauth" r-d r-s
+              (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+              (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+                (privk m-root))) (privk c-id))))
+      (recv database-ch (cat t (exp (gen) signed)))
+      (send database-ch resp))
+    (uniq-orig t))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random256 atom) (query-response atom) (bundle-data atom)))
+
+(defgoal secure-dna-query
+  (forall
+    ((b-s b-k bundle-data) (r-k t r-s random256)
+      (c-id k-id m-root i-root name) (keyserver-ch chan)
+      (k seq blind rndx) (z strd))
+    (implies
+      (and (p "key-server" z 5) (p "key-server" "b-s" z b-s)
+        (p "key-server" "b-k" z b-k) (p "key-server" "r-s" z r-s)
+        (p "key-server" "r-k" z r-k) (p "key-server" "t" z t)
+        (p "key-server" "c-id" z c-id) (p "key-server" "k-id" z k-id)
+        (p "key-server" "m-root" z m-root)
+        (p "key-server" "i-root" z i-root)
+        (p "key-server" "keyserver-ch" z keyserver-ch)
+        (p "key-server" "seq" z blind) (p "key-server" "blind" z seq)
+        (p "key-server" "k" z k) (non (privk c-id)) (non (privk k-id))
+        (non (privk m-root)) (non (privk i-root)) (ugen k)
+        (uniq-at r-k z 1) (uniq-at t z 1))
+      (or
+        (exists
+          ((b-k-0 b-d bundle-data) (r-s-0 r-k-0 t-0 t2 random256)
+            (k-id-0 d-id i-root-0 name)
+            (keyserver-ch-0 database-ch chan) (seq-0 blind-0 k-0 rndx)
+            (z-0 strd))
+          (and (p "synth-client" z-0 8) (p "synth-client" "b-s" z-0 b-s)
+            (p "synth-client" "b-k" z-0 b-k-0)
+            (p "synth-client" "b-d" z-0 b-d)
+            (p "synth-client" "r-s" z-0 r-s-0)
+            (p "synth-client" "r-s2" z-0 r-s)
+            (p "synth-client" "r-k" z-0 r-k-0)
+            (p "synth-client" "r-d" z-0 r-k)
+            (p "synth-client" "t" z-0 t-0)
+            (p "synth-client" "t2" z-0 t2)
+            (p "synth-client" "c-id" z-0 c-id)
+            (p "synth-client" "k-id" z-0 k-id-0)
+            (p "synth-client" "d-id" z-0 d-id)
+            (p "synth-client" "m-root" z-0 m-root)
+            (p "synth-client" "i-root" z-0 i-root-0)
+            (p "synth-client" "keyserver-ch" z-0 keyserver-ch-0)
+            (p "synth-client" "database-ch" z-0 database-ch)
+            (p "synth-client" "seq" z-0 seq-0)
+            (p "synth-client" "blind" z-0 blind-0)
+            (p "synth-client" "k" z-0 k-0) (prec z 1 z-0 6)
+            (prec z-0 5 z 0) (prec z-0 7 z 2) (ugen seq-0)
+            (ugen blind-0) (uniq-at r-s-0 z-0 0) (uniq-at r-s z-0 5)))
+        (exists
+          ((b-k-0 b-d bundle-data) (r-s-0 r-k-0 t-0 t2 random256)
+            (k-id-0 d-id i-root-0 name)
+            (keyserver-ch-0 database-ch chan) (seq-0 blind-0 k-0 rndx)
+            (z-0 strd))
+          (and (p "synth-client" z-0 8) (p "key-server" "seq" z seq)
+            (p "key-server" "blind" z blind)
+            (p "synth-client" "b-s" z-0 b-s)
+            (p "synth-client" "b-k" z-0 b-k-0)
+            (p "synth-client" "b-d" z-0 b-d)
+            (p "synth-client" "r-s" z-0 r-s-0)
+            (p "synth-client" "r-s2" z-0 r-s)
+            (p "synth-client" "r-k" z-0 r-k-0)
+            (p "synth-client" "r-d" z-0 r-k)
+            (p "synth-client" "t" z-0 t-0)
+            (p "synth-client" "t2" z-0 t2)
+            (p "synth-client" "c-id" z-0 c-id)
+            (p "synth-client" "k-id" z-0 k-id-0)
+            (p "synth-client" "d-id" z-0 d-id)
+            (p "synth-client" "m-root" z-0 m-root)
+            (p "synth-client" "i-root" z-0 i-root-0)
+            (p "synth-client" "keyserver-ch" z-0 keyserver-ch-0)
+            (p "synth-client" "database-ch" z-0 database-ch)
+            (p "synth-client" "seq" z-0 seq-0)
+            (p "synth-client" "blind" z-0 blind-0)
+            (p "synth-client" "k" z-0 k-0) (prec z 1 z-0 6)
+            (prec z-0 5 z 0) (prec z-0 7 z 2) (ugen seq-0)
+            (ugen blind-0) (uniq-at r-s-0 z-0 0) (uniq-at r-s z-0 5)))
+        (exists
+          ((b-k-0 bundle-data) (t-0 random256) (k-id-0 i-root-0 name)
+            (keyserver-ch-0 chan) (z-0 strd))
+          (and (p "synth-client" z-0 3) (p "synth-client" "b-s" z-0 b-s)
+            (p "synth-client" "b-k" z-0 b-k-0)
+            (p "synth-client" "r-s" z-0 r-s)
+            (p "synth-client" "r-k" z-0 r-k)
+            (p "synth-client" "t" z-0 t-0)
+            (p "synth-client" "c-id" z-0 c-id)
+            (p "synth-client" "k-id" z-0 k-id-0)
+            (p "synth-client" "m-root" z-0 m-root)
+            (p "synth-client" "i-root" z-0 i-root-0)
+            (p "synth-client" "keyserver-ch" z-0 keyserver-ch-0)
+            (prec z 1 z-0 1) (prec z-0 0 z 0) (prec z-0 2 z 2)
+            (uniq-at r-s z-0 0)))
+        (exists
+          ((b-k-0 bundle-data) (t-0 random256) (k-id-0 i-root-0 name)
+            (keyserver-ch-0 chan) (z-0 strd))
+          (and (p "synth-client" z-0 3) (p "key-server" "seq" z seq)
+            (p "key-server" "blind" z blind)
+            (p "synth-client" "b-s" z-0 b-s)
+            (p "synth-client" "b-k" z-0 b-k-0)
+            (p "synth-client" "r-s" z-0 r-s)
+            (p "synth-client" "r-k" z-0 r-k)
+            (p "synth-client" "t" z-0 t-0)
+            (p "synth-client" "c-id" z-0 c-id)
+            (p "synth-client" "k-id" z-0 k-id-0)
+            (p "synth-client" "m-root" z-0 m-root)
+            (p "synth-client" "i-root" z-0 i-root-0)
+            (p "synth-client" "keyserver-ch" z-0 keyserver-ch-0)
+            (prec z 1 z-0 1) (prec z-0 0 z 0) (prec z-0 2 z 2)
+            (uniq-at r-s z-0 0)))))))
+
+(defprotocol secure-dna-query diffie-hellman
+  (defrole synth-client
+    (vars (keyserver-ch database-ch chan)
+      (r-s r-s2 r-k r-d t t2 random256)
+      (c-id k-id d-id m-root i-root name) (seq blind k rndx)
+      (b-s b-k b-d bundle-data) (resp query-response))
+    (trace
+      (send keyserver-ch
+        (cat r-s "keyserver" k-id
+          (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+          (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+            (privk m-root))))
+      (recv keyserver-ch
+        (cat t r-k
+          (cat (cat "Token" k-id (pubk k-id) i-root (pubk i-root) b-k)
+            (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k)
+              (privk i-root)))
+          (enc
+            (hash "server-mutauth" r-k r-s
+              (cat "Token" k-id (pubk k-id) i-root (pubk i-root) b-k)
+              (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k)
+                (privk i-root))) (privk k-id))))
+      (send keyserver-ch
+        (cat t "nSeq"
+          (enc
+            (hash "client-mutauth" r-k r-s
+              (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+              (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+                (privk m-root))) (privk c-id))))
+      (send keyserver-ch (cat t (exp (gen) (mul seq blind))))
+      (recv keyserver-ch (exp (gen) (mul seq blind k)))
+      (send database-ch
+        (cat r-s2 "screen"
+          (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+          (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+            (privk m-root))))
+      (recv database-ch
+        (cat t2 r-d
+          (cat (cat "Token" d-id (pubk d-id) i-root (pubk i-root) b-d)
+            (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d)
+              (privk i-root)))
+          (enc
+            (hash "server-mutauth" r-d r-s2
+              (cat "Token" d-id (pubk d-id) i-root (pubk i-root) b-d)
+              (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d)
+                (privk i-root))) (privk d-id))))
+      (send database-ch
+        (cat t2 "nSeq"
+          (enc
+            (hash "client-mutauth" r-d r-s2
+              (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+              (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+                (privk m-root))) (privk c-id))))
+      (send database-ch (cat t2 (exp (gen) (mul seq k))))
+      (recv database-ch resp))
+    (uniq-orig r-s r-s2)
+    (uniq-gen seq blind))
+  (defrole key-server
+    (vars (keyserver-ch chan) (r-s r-k t random256)
+      (c-id k-id m-root i-root name) (seq blind k rndx)
+      (b-s b-k bundle-data))
+    (trace
+      (recv keyserver-ch
+        (cat r-s "keyserver" k-id
+          (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+          (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+            (privk m-root))))
+      (send keyserver-ch
+        (cat t r-k
+          (cat (cat "Token" k-id (pubk k-id) i-root (pubk i-root) b-k)
+            (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k)
+              (privk i-root)))
+          (enc
+            (hash "server-mutauth" r-k r-s
+              (cat "Token" k-id (pubk k-id) i-root (pubk i-root) b-k)
+              (enc (hash k-id (pubk k-id) i-root (pubk i-root) b-k)
+                (privk i-root))) (privk k-id))))
+      (recv keyserver-ch
+        (cat t "nSeq"
+          (enc
+            (hash "client-mutauth" r-k r-s
+              (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+              (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+                (privk m-root))) (privk c-id))))
+      (recv keyserver-ch (cat t (exp (gen) (mul seq blind))))
+      (send keyserver-ch (exp (gen) (mul seq blind k))))
+    (uniq-orig t)
+    (uniq-gen k)
+    (absent (k (mul seq blind))))
+  (defrole database
+    (vars (database-ch chan) (r-s r-d t random256)
+      (c-id d-id m-root i-root name) (resp query-response) (signed expt)
+      (b-s b-d bundle-data))
+    (trace
+      (recv database-ch
+        (cat r-s "screen"
+          (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+          (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+            (privk m-root))))
+      (send database-ch
+        (cat t r-d
+          (cat (cat "Token" d-id (pubk d-id) i-root (pubk i-root) b-d)
+            (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d)
+              (privk i-root)))
+          (enc
+            (hash "server-mutauth" r-d r-s
+              (cat "Token" d-id (pubk d-id) i-root (pubk i-root) b-d)
+              (enc (hash d-id (pubk d-id) i-root (pubk i-root) b-d)
+                (privk i-root))) (privk d-id))))
+      (recv database-ch
+        (cat t "nSeq"
+          (enc
+            (hash "client-mutauth" r-d r-s
+              (cat "Token" c-id (pubk c-id) m-root (pubk m-root) b-s)
+              (enc (hash c-id (pubk c-id) m-root (pubk m-root) b-s)
+                (privk m-root))) (privk c-id))))
+      (recv database-ch (cat t (exp (gen) signed)))
+      (send database-ch resp))
+    (uniq-orig t))
+  (defgenrule neqRl_indx
+    (forall ((x indx)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_strd
+    (forall ((x strd)) (implies (fact neq x x) (false))))
+  (defgenrule neqRl_mesg
+    (forall ((x mesg)) (implies (fact neq x x) (false))))
+  (lang (random256 atom) (query-response atom) (bundle-data atom)))
+
+(defgoal secure-dna-query
+  (forall
+    ((b-s b-d bundle-data) (resp query-response) (r-d r-s t random256)
+      (c-id d-id m-root i-root name) (database-ch chan) (signed expt)
+      (z strd))
+    (implies
+      (and (p "database" z 5) (p "database" "b-s" z b-s)
+        (p "database" "b-d" z b-d) (p "database" "resp" z resp)
+        (p "database" "r-s" z r-s) (p "database" "r-d" z r-d)
+        (p "database" "t" z t) (p "database" "c-id" z c-id)
+        (p "database" "d-id" z d-id) (p "database" "m-root" z m-root)
+        (p "database" "i-root" z i-root)
+        (p "database" "database-ch" z database-ch)
+        (p "database" "signed" z signed) (non (privk c-id))
+        (non (privk d-id)) (non (privk m-root)) (non (privk i-root))
+        (uniq-at t z 1) (uniq-at r-d z 1))
+      (or
+        (exists
+          ((b-k b-d-0 bundle-data) (r-s-0 r-k t-0 t2 random256)
+            (k-id d-id-0 i-root-0 name)
+            (keyserver-ch database-ch-0 chan) (seq blind k rndx)
+            (z-0 strd))
+          (and (p "synth-client" z-0 8) (p "synth-client" "b-s" z-0 b-s)
+            (p "synth-client" "b-k" z-0 b-k)
+            (p "synth-client" "b-d" z-0 b-d-0)
+            (p "synth-client" "r-s" z-0 r-s-0)
+            (p "synth-client" "r-s2" z-0 r-s)
+            (p "synth-client" "r-k" z-0 r-k)
+            (p "synth-client" "r-d" z-0 r-d)
+            (p "synth-client" "t" z-0 t-0)
+            (p "synth-client" "t2" z-0 t2)
+            (p "synth-client" "c-id" z-0 c-id)
+            (p "synth-client" "k-id" z-0 k-id)
+            (p "synth-client" "d-id" z-0 d-id-0)
+            (p "synth-client" "m-root" z-0 m-root)
+            (p "synth-client" "i-root" z-0 i-root-0)
+            (p "synth-client" "keyserver-ch" z-0 keyserver-ch)
+            (p "synth-client" "database-ch" z-0 database-ch-0)
+            (p "synth-client" "seq" z-0 seq)
+            (p "synth-client" "blind" z-0 blind)
+            (p "synth-client" "k" z-0 k) (prec z 1 z-0 6)
+            (prec z-0 5 z 0) (prec z-0 7 z 2) (ugen seq) (ugen blind)
+            (uniq-at r-s-0 z-0 0) (uniq-at r-s z-0 5)))
+        (exists
+          ((b-k bundle-data) (t-0 random256) (k-id i-root-0 name)
+            (keyserver-ch chan) (z-0 strd))
+          (and (p "synth-client" z-0 3) (p "synth-client" "b-s" z-0 b-s)
+            (p "synth-client" "b-k" z-0 b-k)
+            (p "synth-client" "r-s" z-0 r-s)
+            (p "synth-client" "r-k" z-0 r-d)
+            (p "synth-client" "t" z-0 t-0)
+            (p "synth-client" "c-id" z-0 c-id)
+            (p "synth-client" "k-id" z-0 k-id)
+            (p "synth-client" "m-root" z-0 m-root)
+            (p "synth-client" "i-root" z-0 i-root-0)
+            (p "synth-client" "keyserver-ch" z-0 keyserver-ch)
+            (prec z 1 z-0 1) (prec z-0 0 z 0) (prec z-0 2 z 2)
+            (uniq-at r-s z-0 0)))))))

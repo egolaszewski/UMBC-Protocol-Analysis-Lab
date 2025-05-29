@@ -1,8 +1,6 @@
 (herald "Secure DNA Query Protocol without Cert. Chaining"
   (comment "This model does not feature any certificate chaining.")
   (algebra diffie-hellman)
-  ;;(reverse-nodes)
-  (try-old-strands)
 )
 
 (defmacro (Token subject-id signer-id data)
@@ -15,32 +13,15 @@
   )
 )
 
-(defmacro (Certificate subject-id signer-id data)
-  (cat 
-    (cat "Certificate" 
-      subject-id (pubk subject-id) signer-id (pubk signer-id) data)
-    (enc (hash
-      subject-id (pubk subject-id) signer-id (pubk signer-id) data)
-      (invk (pubk signer-id)))
-  )
-)
-
-(defmacro (Bundle subject-id signer-id data)
-  (cat "Bundle"	
-    (Token subject-id signer-id data)
-    (Certificate subject-id signer-id data)
-  )
-)
-
 (defmacro (ServerMutauthReq
   server-id client-id infrastructure-root
   server-nonce client-nonce cookie
   server-bundle)
   (cat cookie server-nonce
-    (Bundle server-id infrastructure-root server-bundle)
+    (Token server-id infrastructure-root server-bundle)
     (enc
       (hash "server-mutauth" server-nonce client-nonce
-      (Bundle server-id infrastructure-root server-bundle))
+      (Token server-id infrastructure-root server-bundle))
       (privk server-id)
     )
   )
@@ -53,7 +34,7 @@
   (cat cookie "nSeq"
     (enc
       (hash "client-mutauth" server-nonce client-nonce
-      (Bundle client-id manufacturer-root client-bundle))
+      (Token client-id manufacturer-root client-bundle))
       (privk client-id)
     )
   )
@@ -68,7 +49,7 @@
   (^
     (d1 channel
       (cat client-nonce "keyserver" server-id
-        (Bundle client-id manufacturer-root client-bundle)))
+        (Token client-id manufacturer-root client-bundle)))
     (d2 channel (ServerMutauthReq
       server-id client-id infrastructure-root
       server-nonce client-nonce cookie
@@ -95,7 +76,7 @@
   (^
     (d1 channel
       (cat client-nonce "screen"
-        (Bundle client-id manufacturer-root client-bundle)))
+        (Token client-id manufacturer-root client-bundle)))
     (d2 channel (ServerMutauthReq
       database-id client-id infrastructure-root
       database-nonce client-nonce cookie
@@ -119,9 +100,8 @@
       (r-s r-s2 r-k r-d t t2 random256)
       (c-id k-id d-id m-root i-root name)
       (seq blind k rndx)
-      (seqstor locn)
-    (b-s b-k b-d bundle-data)
-    (resp query-response)
+      (b-s b-k b-d bundle-data)
+      (resp query-response)
     )
     (trace
       (Client2Keyserver send recv keyserver-ch
@@ -148,8 +128,6 @@
       (seq blind k rndx)
       (seq-blinded expt)
       (b-s b-k bundle-data)
-      (any mesg)
-      (kstor locn)
     )
     (trace
       (Client2Keyserver recv send keyserver-ch
@@ -168,7 +146,7 @@
       (c-id d-id m-root i-root name)
       (resp query-response)
       (signed expt)
-    (b-s b-d bundle-data)
+      (b-s b-d bundle-data)
     )
     (trace
       (Client2Database recv send database-ch
@@ -183,11 +161,11 @@
   (lang
     (random256 atom)
     (query-response atom)
-	(bundle-data atom)
+    (bundle-data atom)
   )
 )
 
-;; Basic query synth-client-2-ks perspective.
+;; Authentication query synth-client perspective.
 (defskeleton secure-dna-query
   (vars
     (keyserver-ch database-ch chan)
@@ -204,17 +182,17 @@
   (auth keyserver-ch database-ch)
   (conf keyserver-ch database-ch)
   (non-orig
-	(privk c-id)
-	(privk k-id)
-	(privk d-id)
-	(privk m-root)
-	(privk i-root)
+  (privk c-id)
+  (privk k-id)
+  (privk d-id)
+  (privk m-root)
+  (privk i-root)
   )
   (uniq-orig r-s r-s2)
   (facts (neq seq blind))
 )
 
-;; Basic query key-server perspective.
+;; Authentication query key-server perspective.
 (defskeleton secure-dna-query
   (vars
     (keyserver-ch chan)
@@ -229,15 +207,13 @@
     (t t)
     (k k)
   )
-  (auth keyserver-ch)
-  (conf keyserver-ch)
   (non-orig (privk c-id) (privk k-id) (privk m-root) (privk i-root))
   (uniq-orig r-k)
   (uniq-orig t)
   (uniq-gen k)
 )
 
-;; Basic query databse perspective.
+;; Authentication query databse perspective.
 (defskeleton secure-dna-query
   (vars
     (database-ch chan)
@@ -249,8 +225,6 @@
     (c-id c-id) (d-id d-id) (m-root m-root) (i-root i-root)
     (r-d r-d)
   )
-  (auth database-ch)
-  (conf database-ch)
   (non-orig (privk c-id) (privk d-id) (privk m-root) (privk i-root))
   (uniq-orig r-d)
 )
