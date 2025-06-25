@@ -3,39 +3,39 @@
   (algebra diffie-hellman)
 )
 
-(defmacro (Token subject-id signer-id data)
+(defmacro (Token subject-id subject-pubk signer-id data)
   (cat 
-    (cat "Token" 
-    subject-id (pubk subject-id) signer-id (pubk signer-id) data)
-    (enc (hash
-    subject-id (pubk subject-id) signer-id (pubk signer-id) data)
-  (invk (pubk signer-id)))
+    "Token" subject-id subject-pubk signer-id (pubk signer-id) data
+    (enc
+      (hash "Token" subject-id subject-pubk signer-id (pubk signer-id) data)
+      (privk signer-id)
+    )
   )
 )
 
 (defmacro (ServerMutauthReq
-  server-id client-id infrastructure-root
+  server-id server-pubk infrastructure-root
   server-nonce client-nonce cookie
   server-bundle)
   (cat cookie server-nonce
-    (Token server-id infrastructure-root server-bundle)
+    (Token server-id server-pubk infrastructure-root server-bundle)
     (enc
       (hash "server-mutauth" server-nonce client-nonce
-      (Token server-id infrastructure-root server-bundle))
-      (privk server-id)
+      (Token server-id server-pubk infrastructure-root server-bundle))
+      (invk server-pubk)
     )
   )
 )
 
 (defmacro (ClientMutauthResp
-  client-id server-id manufacturer-root
+  client-id client-pubk manufacturer-root
   server-nonce client-nonce cookie
   client-bundle)
   (cat cookie "nSeq"
     (enc
       (hash "client-mutauth" server-nonce client-nonce
-      (Token client-id manufacturer-root client-bundle))
-      (privk client-id)
+      (Token client-id client-pubk manufacturer-root client-bundle))
+      (invk client-pubk)
     )
   )
 )
@@ -45,17 +45,18 @@
   client-id server-id manufacturer-root infrastructure-root
   client-nonce server-nonce cookie
   client-bundle server-bundle
+  client-pubk server-pubk
   sequence blinding key)
   (^
     (d1 channel
       (cat client-nonce "keyserver" server-id
-        (Token client-id manufacturer-root client-bundle)))
+        (Token client-id client-pubk manufacturer-root client-bundle)))
     (d2 channel (ServerMutauthReq
-      server-id client-id infrastructure-root
+      server-id server-pubk infrastructure-root
       server-nonce client-nonce cookie
       server-bundle))
     (d1 channel (ClientMutauthResp
-      client-id server-id manufacturer-root
+      client-id client-pubk manufacturer-root
       server-nonce client-nonce cookie
       client-bundle))
     ;; (recv s-ch "OK")
@@ -71,18 +72,19 @@
   client-id database-id manufacturer-root infrastructure-root
   client-nonce database-nonce cookie
   client-bundle database-bundle
+  client-pubk database-pubk
   sequence
   resp)
   (^
     (d1 channel
       (cat client-nonce "screen"
-        (Token client-id manufacturer-root client-bundle)))
+        (Token client-id client-pubk manufacturer-root client-bundle)))
     (d2 channel (ServerMutauthReq
-      database-id client-id infrastructure-root
+      database-id database-pubk infrastructure-root
       database-nonce client-nonce cookie
       database-bundle))
     (d1 channel (ClientMutauthResp
-      client-id database-id manufacturer-root
+      client-id client-pubk manufacturer-root
       database-nonce client-nonce cookie
       client-bundle))
     ;; (recv database-ch "OK")
@@ -102,17 +104,20 @@
       (seq blind k rndx)
       (b-s b-k b-d bundle-data)
       (resp query-response)
+      (k-pubk d-pubk akey)
     )
     (trace
       (Client2Keyserver send recv keyserver-ch
         c-id k-id m-root i-root
         r-s r-k t
         b-s b-k
+	(pubk c-id) k-pubk
         seq blind k)
       (Client2Database send recv database-ch
         c-id d-id m-root i-root
         r-s2 r-d t2
         b-s b-d
+	(pubk c-id) d-pubk
         (exp (gen) (mul seq blind k (rec blind)))
         resp)
     )
@@ -128,12 +133,14 @@
       (seq blind k rndx)
       (seq-blinded expt)
       (b-s b-k bundle-data)
+      (s-pubk akey)
     )
     (trace
       (Client2Keyserver recv send keyserver-ch
         c-id k-id m-root i-root
         r-s r-k t
         b-s b-k
+	s-pubk (pubk k-id)
         seq blind k)
     )
     (uniq-orig t)
@@ -147,12 +154,14 @@
       (resp query-response)
       (signed expt)
       (b-s b-d bundle-data)
+      (s-pubk akey)
     )
     (trace
       (Client2Database recv send database-ch
         c-id d-id m-root i-root
         r-s r-d t
         b-s b-d
+	s-pubk (pubk d-id)
         (exp (gen) signed)
         resp)
     )
